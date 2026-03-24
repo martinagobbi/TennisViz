@@ -1,0 +1,22 @@
+# Core
+pandas>=2.1.0
+numpy>=1.26.0
+openpyxl>=3.1.0          # lettura XLSX
+ 
+# Visualizzazione
+plotly>=5.18.0            # grafici interattivi
+dash>=2.14.0              # dashboard web
+dash-bootstrap-components>=1.5.0  # layout responsive
+ 
+# Grafici matplotlib (per export PNG statici)
+matplotlib>=3.8.0
+seaborn>=0.13.0
+ 
+# Utility
+pyarrow>=14.0.0           # salvataggio parquet
+python-dotenv>=1.0.0      # variabili d'ambiente
+ 
+# Dev / testing
+pytest>=7.4.0
+jupyter>=1.0.0
+ 

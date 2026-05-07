@@ -71,6 +71,7 @@ cython_debug/
 .pdm-python
 .pdm-build/
 .pypirc
+__init__.py
 
 .idea/
 .spyderproject
@@ -104,3 +105,9 @@ output/
 # Excel files
 *.xlsx
 *.xls
+
+#JSON
+match_parsed.json
+
+# Charts
+figures/

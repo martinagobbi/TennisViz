@@ -23,9 +23,9 @@ SHOT_DIRECTION = {
 }
 
 SERVE_OUTCOMES = {
-    "*": "ace_or_clean_winner",
-    "#": "forced_error_drawn",
-    "@": "unforced_error_drawn",
+    "*": "ace",
+    "#": "forced_error",
+    "@": "unforced_error",
 }
 
 SERVE_RETURN_DEPTH = {
@@ -161,11 +161,20 @@ def parse_point_code(code: str | None, serve_number: int = 1) -> ParsedPoint | N
     serve.raw += "".join(modifiers)
 
     if idx < len(raw) and raw[idx] in FAULT_TYPE:
-        serve.fault_code = raw[idx]
-        serve.fault = FAULT_TYPE[raw[idx]]
-        serve.is_fault = True
-        serve.raw += raw[idx]
-        idx += 1
+        fault_code = raw[idx]
+        # il let ('c') non è un fault se è seguito da altri caratteri:
+        # significa che la palla ha toccato il nastro ma è entrata
+        # e il punto è stato giocato normalmente
+        if fault_code == "c" and idx + 1 < len(raw):
+            serve.raw += fault_code
+            idx += 1  # salta il 'c' e continua a parsare il rally
+            warnings.append("Let sul servizio (c): punto rigiocato, non contato come fault")
+        else:
+            serve.fault_code = fault_code
+            serve.fault = FAULT_TYPE[fault_code]
+            serve.is_fault = True
+            serve.raw += fault_code
+            idx += 1
 
     elif idx < len(raw) and raw[idx] in SERVE_OUTCOMES:
         serve.outcome_code = raw[idx]
@@ -269,16 +278,42 @@ def parse_point_row(
         and second_point.serve.is_fault
     )
 
+    # Determina il vincitore del punto dalla colonna "PtWinner" (1 o 2)
+    pt_winner = str(row.get("PtWinner", "")).strip()
+    server    = str(row.get("Svr", "")).strip()
+    set_num   = row.get("Set", None)
+    game_num  = row.get("Game", None)
+
+    # Break point: la colonna "Pts" nel CSV Sackmann contiene "BP" se è un BP
+    pts_flag      = str(row.get("Pts", "")).strip()
+    is_break_point = "BP" in pts_flag
+
+    # Tie-break: il game è un TB se il punteggio inizia con "0-0" e siamo oltre game 12
+    # oppure usa la colonna "TBpt" se presente
+    is_tiebreak = str(row.get("TBpt", "")).strip() == "1"
+
+    all_warnings = []
+    if first_point:  all_warnings += first_point.warnings
+    if second_point: all_warnings += second_point.warnings
+
     return {
-        "first_serve": asdict(first_point) if first_point else None,
+        "first_serve":  asdict(first_point)  if first_point  else None,
         "second_serve": asdict(second_point) if second_point else None,
         "active_point": asdict(active_point) if active_point else None,
-        "derived": derive_point_features(first_point, second_point),
+        "derived":      derive_point_features(first_point, second_point),
         "flags": {
-            "has_second_serve": second_point is not None,
+            "has_second_serve":  second_point is not None,
             "first_serve_fault": bool(first_point and first_point.serve.is_fault),
-            "double_fault": double_fault,
+            "double_fault":      double_fault,
         },
+        "meta": {
+            "server":         str(row.get("Svr", "")).strip(),
+            "point_winner":   str(row.get("PtWinner", "")).strip(),
+            "set": int(row.get("Set1", 0)) + int(row.get("Set2", 0)) + 1,
+            "is_break_point": "BP" in str(row.get("Pts", "")),
+            "is_tiebreak":    bool(row.get("TbSet", False)),
+            "warnings":       all_warnings,
+        }
     }
 
 

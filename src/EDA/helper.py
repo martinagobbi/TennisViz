@@ -62,7 +62,7 @@ def load_data(path: str | None = None, raw: list | None = None) -> pd.DataFrame:
     df["winner_name"]  = df["point_winner"].map(PLAYERS)
     df["rally_cat"]    = pd.cut(df["rally_length"],
                                 bins=[0, 4, 8, 999],
-                                labels=["Breve (1–4)", "Medio (5–8)", "Lungo (9+)"])
+                                labels=["Short (1–4)", "Medium (5–8)", "Long (9+)"])
     return df
 
 

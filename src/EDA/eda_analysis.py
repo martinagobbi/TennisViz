@@ -244,7 +244,7 @@ def plot_3_1_rally_length(df: pd.DataFrame):
     ax1.set_title("(a) Rally Length Distribution", fontweight="bold")
 
     # (b) istogramma raggruppato + % punti vinti per categoria
-    cats = ["Breve (1–4)", "Medio (5–8)", "Lungo (9+)"]
+    cats = ["Short (1–4)", "Medium (5–8)", "Long (9+)"]
     x = np.arange(len(cats)); w = 0.35
     for offset, (pid, pname, col, lcol) in enumerate([
         (SINNER_ID,"Sinner",C_SINNER,C_LIGHT_S),
@@ -262,13 +262,12 @@ def plot_3_1_rally_length(df: pd.DataFrame):
         bars = ax2.bar(x+offset*w, win_pcts, w, label=pname, color=col, alpha=0.85)
         ax2.bar_label(bars, fmt="%.1f%%", padding=3, fontsize=8)
     ax2.set_xticks(x+w/2); ax2.set_xticklabels(cats)
-    ax2.set_ylabel("% punti vinti"); ax2.set_ylim(0,70)
+    ax2.set_ylabel("% points won"); ax2.set_ylim(0,70)
     ax2.legend(frameon=False)
-    ax2.set_title("(b) % punti vinti per categoria di scambio", fontweight="bold")
+    ax2.set_title("(b) % points won per category of rally", fontweight="bold")
 
-    fig.suptitle("3.1 — Lunghezza degli Scambi", fontweight="bold", x=0.02, ha="left")
+    fig.suptitle("3.1 — Rally Length", fontweight="bold", x=0.02, ha="left")
     save(fig, "5_rally_length")
-
 
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────

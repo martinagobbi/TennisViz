@@ -1,8 +1,9 @@
+from pathlib import Path
 import pandas as pd
 
 MATCH_ID = "20250608-M-Roland_Garros-F-Jannik_Sinner-Carlos_Alcaraz"
 
-def filter_match(raw_path: str, out_path: str) -> None:
+def filter_match(raw_path: Path, out_path: Path) -> None:
     # Read the CSV file in chunks and filter for the specific match_id (to avoid memory issues)
     chunks = []
     for chunk in pd.read_csv(raw_path, chunksize=10_000, low_memory=False):
@@ -16,6 +17,6 @@ def filter_match(raw_path: str, out_path: str) -> None:
 
 if __name__ == "__main__":
     filter_match(
-        "data\\raw\\charting-m-points-2020s.csv",
-        "data\\processed\\sinner_alcaraz_2025.parquet"
+        Path("data") / "raw" / "charting-m-points-2020s.csv",
+        Path("data") / "processed" / "sinner_alcaraz_2025.parquet"
     )

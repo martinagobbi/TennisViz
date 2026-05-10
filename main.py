@@ -7,8 +7,10 @@ from src.EDA.eda_analysis import run_all
 
 sys.path.append(str(Path(__file__).parent))
 
+path = Path("data") / "processed" / "sinner_alcaraz_2025.parquet"
+
 # 1. Carica il parquet (è già una sola partita, nessun filtro necessario)
-df = pd.read_parquet("data\\processed\\sinner_alcaraz_2025.parquet")
+df = pd.read_parquet(path)
 
 # 2. Converti ogni riga in un punto parsato
 punti = []

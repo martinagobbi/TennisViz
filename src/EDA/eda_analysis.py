@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore")
 
 # ─── SECTION 1 – MATCH OVERVIEW ───────────────────────────────────────────────
 
-def plot_1_1_summary_table(df: pd.DataFrame):
+def plot_1_summary_table(df: pd.DataFrame):
     """Summary table of points, aces, double faults, data quality."""
     tot = len(df)
     rows = []
@@ -71,7 +71,7 @@ def plot_1_1_summary_table(df: pd.DataFrame):
 
 # ─── SECTION 2 – SERVE AND RETURN ─────────────────────────────────────────────
 
-def plot_2_1_serve_efficiency(df: pd.DataFrame):
+def plot_2_serve_efficiency(df: pd.DataFrame):
     """
     Grouped bar: % 1st In, % Points on 1st, % Points on 2nd.
     Annotations: Aces and Double Faults in text.
@@ -115,14 +115,14 @@ def plot_2_1_serve_efficiency(df: pd.DataFrame):
     save(fig, "2_serve_efficiency")
 
 
-def plot_2_2_serve_direction(df: pd.DataFrame):
+def plot_3_serve_direction(df: pd.DataFrame):
     """
     Stacked bar: frequenza direzioni 4=Wide, 5=Body, 6=T
     separata per 1° e 2° servizio e per giocatore.
     """
     dir_map   = {"out_wide": "Wide (4)", "body": "Body (5)", "down_the_T": "T (6)"}
     dir_order = ["Wide (4)", "Body (5)", "T (6)"]
-    colors_d  = {"Wide (4)": "#378ADD", "Body (5)": "#63991A", "T (6)": "#BA7517"}
+    colors_d  = {"Wide (4)": "#44A1A0", "Body (5)": "#78CDD7", "T (6)": "#247B7B"}
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=False)
     for ax, (pid, pname) in zip(axes, PLAYERS.items()):
@@ -145,7 +145,7 @@ def plot_2_2_serve_direction(df: pd.DataFrame):
             for rect, val, bot in zip(bars, vals, bottoms):
                 if val > 5:
                     ax.text(rect.get_x()+rect.get_width()/2, bot+val/2,
-                            f"{val:.0f}%", ha="center", va="center", fontsize=9, color="white")
+                            f"{val:.0f}%", ha="center", va="center", fontsize=9, color="black")
             bottoms += np.array(vals)
         ax.set_title(pname, fontweight="bold")
         ax.set_ylim(0,100); ax.set_ylabel("% points" if pid==SINNER_ID else "")
@@ -156,7 +156,7 @@ def plot_2_2_serve_direction(df: pd.DataFrame):
     save(fig, "3_serve_direction")
 
 
-def plot_2_3_return(df: pd.DataFrame):
+def plot_4_return(df: pd.DataFrame):
     """
     Due sub-plot:
     (a) Frequenza profondità risposta (short/mid/deep) – bar chart
@@ -195,10 +195,10 @@ def plot_2_3_return(df: pd.DataFrame):
     ax1.set_ylabel("%")
     ax1.set_ylim(0, 60)
     ax1.legend(frameon=False)
-    ax1.set_title("(a) Profondità della risposta", fontweight="bold")
+    ax1.set_title("(a) Return Depth", fontweight="bold")
 
     # (b) % punti vinti in risposta (su 1° vs 2° avversario)
-    cat_labels = ["Risposta al 1°", "Risposta al 2°"]
+    cat_labels = ["Return to 1st", "Return to 2nd"]
     x2 = np.arange(len(cat_labels)); w2 = 0.35
     for offset, (pid, pname, col) in enumerate([(SINNER_ID,"Sinner",C_SINNER),(ALCARAZ_ID,"Alcaraz",C_ALCARAZ)]):
         opp = ALCARAZ_ID if pid==SINNER_ID else SINNER_ID
@@ -211,14 +211,14 @@ def plot_2_3_return(df: pd.DataFrame):
     ax2.set_xticks(x2+w2/2); ax2.set_xticklabels(cat_labels)
     ax2.set_ylim(0,70); ax2.set_ylabel("%")
     ax2.legend(frameon=False)
-    ax2.set_title("(b) % punti vinti in risposta", fontweight="bold")
+    ax2.set_title("(b) % points won on return", fontweight="bold")
 
-    fig.suptitle("2.3 — La Risposta", fontweight="bold", x=0.02, ha="left")
+    fig.suptitle("2.3 — The Return", fontweight="bold", x=0.02, ha="left")
     save(fig, "4_return")
 
 # ─── SEZIONE 3 – IL PALLEGGIO ─────────────────────────────────────────────────
 
-def plot_3_1_rally_length(df: pd.DataFrame):
+def plot_5_rally_length(df: pd.DataFrame):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 
     # (a) distribuzione KDE
@@ -264,7 +264,7 @@ def plot_3_1_rally_length(df: pd.DataFrame):
     ax2.set_xticks(x+w/2); ax2.set_xticklabels(cats)
     ax2.set_ylabel("% points won"); ax2.set_ylim(0,70)
     ax2.legend(frameon=False)
-    ax2.set_title("(b) % points won per category of rally", fontweight="bold")
+    ax2.set_title("(b) % points won per rally category", fontweight="bold")
 
     fig.suptitle("3.1 — Rally Length", fontweight="bold", x=0.02, ha="left")
     save(fig, "5_rally_length")
@@ -282,14 +282,14 @@ def run_all(path: str | None = None, raw: list | None = None):
     print(f"  {len(df)} points loaded | columns: {list(df.columns)}\n")
 
     print("Section 1 – Match Overview")
-    plot_1_1_summary_table(df)
+    plot_1_summary_table(df)
 
     print("\nSection 2 – Serve and Return")
-    plot_2_1_serve_efficiency(df)
-    plot_2_2_serve_direction(df)
-    plot_2_3_return(df)
+    plot_2_serve_efficiency(df)
+    plot_3_serve_direction(df)
+    plot_4_return(df)
 
     print("\nSection 3 – The Rally")
-    plot_3_1_rally_length(df)
+    plot_5_rally_length(df)
 
     print(f"\nDone! Plots saved in '{OUTPUT_DIR.resolve()}'")

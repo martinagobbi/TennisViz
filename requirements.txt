@@ -2,6 +2,7 @@
 pandas>=2.1.0
 numpy>=1.26.0
 openpyxl>=3.1.0          # lettura XLSX
+scipy>=1.12.0            # statistiche
  
 # Visualizzazione
 plotly>=5.18.0            # grafici interattivi
@@ -15,6 +16,7 @@ seaborn>=0.13.0
 # Utility
 pyarrow>=14.0.0           # salvataggio parquet
 python-dotenv>=1.0.0      # variabili d'ambiente
+pathlib>=1.0             # gestione percorsi file
  
 # Dev / testing
 pytest>=7.4.0

@@ -122,8 +122,8 @@ def plot_3_serve_direction(df: pd.DataFrame):
     """
     dir_map   = {"out_wide": "Wide (4)", "body": "Body (5)", "down_the_T": "T (6)"}
     dir_order = ["Wide (4)", "Body (5)", "T (6)"]
-    colors_d  = {"Wide (4)": "#44A1A0", "Body (5)": "#78CDD7", "T (6)": "#247B7B"}
-
+    colors_sinner  = {"Wide (4)": "#44A1A0", "Body (5)": "#78CDD7", "T (6)": "#247B7B"}
+    colors_alcaraz = {"Wide (4)": "#FF8C42", "Body (5)": "#FFB385", "T (6)": "#E25822"}
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=False)
     for ax, (pid, pname) in zip(axes, PLAYERS.items()):
         pts  = df[df["server"] == pid].copy()
@@ -141,7 +141,7 @@ def plot_3_serve_direction(df: pd.DataFrame):
         for d in dir_order:
             vals = [rdf[(rdf["Serve"]==s)&(rdf["Direction"]==d)]["%"].values[0]
                     for s in sn_labels]
-            bars = ax.bar(sn_labels, vals, bottom=bottoms, color=colors_d[d], label=d, alpha=0.88)
+            bars = ax.bar(sn_labels, vals, bottom=bottoms, color=colors_sinner[d] if pid == SINNER_ID else colors_alcaraz[d], label=d, alpha=0.88)
             for rect, val, bot in zip(bars, vals, bottoms):
                 if val > 5:
                     ax.text(rect.get_x()+rect.get_width()/2, bot+val/2,
@@ -229,19 +229,19 @@ def plot_5_rally_length(df: pd.DataFrame):
         *kde(data_s), alpha=0.25, color=C_SINNER
     )
     ax1.plot(
-        *kde(data_s), color=C_SINNER, linewidth=2, label="Sinner"
+        *kde(data_s), color=C_SINNER, linewidth=2, label="Sinner Serving"
     )
     ax1.fill_between(
         *kde(data_a), alpha=0.25, color=C_ALCARAZ
     )
     ax1.plot(
-        *kde(data_a), color=C_ALCARAZ, linewidth=2, label="Alcaraz"
+        *kde(data_a), color=C_ALCARAZ, linewidth=2, label="Alcaraz Serving"
     )
 
     ax1.set_xlabel("Shots in Rally")
     ax1.set_ylabel("Density")
     ax1.legend(frameon=False)
-    ax1.set_title("(a) Rally Length Distribution", fontweight="bold")
+    ax1.set_title("(a) Rally Length Distribution by Server", fontweight="bold")
 
     # (b) istogramma raggruppato + % punti vinti per categoria
     cats = ["Short (1–4)", "Medium (5–8)", "Long (9+)"]

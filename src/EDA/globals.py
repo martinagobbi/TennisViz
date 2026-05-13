@@ -6,10 +6,10 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 SINNER_ID   = "1"
 ALCARAZ_ID  = "2"
-C_SINNER    = "#0E7DFC"
-C_ALCARAZ   = "#FC4B08"
-C_LIGHT_S   = "#94DAFF"
-C_LIGHT_A   = "#FFB096"
+C_SINNER    = "#44A1A0"
+C_ALCARAZ   = "#FF8C42"
+C_LIGHT_S   = "#78CDD7"
+C_LIGHT_A   = "#FFB385"
 PLAYERS     = {"1": "Sinner", "2": "Alcaraz"}
 
 # Stile globale Matplotlib

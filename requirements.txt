@@ -6,6 +6,7 @@ scipy>=1.12.0            # statistiche
  
 # Visualizzazione
 plotly>=5.18.0            # grafici interattivi
+streamlit>=1.28.0         # dashboard interattivo
 dash>=2.14.0              # dashboard web
 dash-bootstrap-components>=1.5.0  # layout responsive
  
@@ -21,4 +22,3 @@ pathlib>=1.0             # gestione percorsi file
 # Dev / testing
 pytest>=7.4.0
 jupyter>=1.0.0
- 

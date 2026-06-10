@@ -32,7 +32,6 @@ def load_data(path: str | None = None, raw: list | None = None) -> pd.DataFrame:
             "point_winner":           m.get("point_winner"),
             "set":                    m.get("set"),
             "is_break_point":         m.get("is_break_point", False),
-            "is_tiebreak":            m.get("is_tiebreak", False),
             "warnings":               m.get("warnings", []),
             # serve
             "serve_direction":        d.get("serve_direction"),

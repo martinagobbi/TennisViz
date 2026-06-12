@@ -311,7 +311,6 @@ def parse_point_row(
             "point_winner":   str(row.get("PtWinner", "")).strip(),
             "set": int(row.get("Set1", 0)) + int(row.get("Set2", 0)) + 1,
             "is_break_point": "BP" in str(row.get("Pts", "")),
-            "is_tiebreak":    bool(row.get("TbSet", False)),
             "warnings":       all_warnings,
         }
     }

@@ -1,10 +1,43 @@
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from .parser import parse_rally_string 
+from typing import Any
+
+import pandas as pd
+
+from .parser import parse_point_row
 
 #  LOADER — legge parquet e costruisce il DataFrame
- 
+
+def get_court_side(score_str: str) -> str:
+    if pd.isna(score_str):
+        return 'Deuce' 
+    clean_score = str(score_str).strip().upper().split(' ')[0]
+    score_map = {'0': 0, '15': 1, '30': 2, '40': 3, 'AD': 4}
+    try:
+        parts = clean_score.split('-')
+        if len(parts) == 2:
+            p1_str, p2_str = parts
+            p1 = score_map[p1_str] if p1_str in score_map else int(p1_str)
+            p2 = score_map[p2_str] if p2_str in score_map else int(p2_str)
+            return 'Deuce' if (p1 + p2) % 2 == 0 else 'Ad'
+    except Exception:
+        pass 
+    return 'Deuce'
+
+
+def _resolve_rally_columns(df: pd.DataFrame) -> tuple[str, str]:
+    if {"1st", "2nd"}.issubset(df.columns):
+        return "1st", "2nd"
+    if {"rally_1st", "rally_2nd"}.issubset(df.columns):
+        return "rally_1st", "rally_2nd"
+    raise ValueError("Input file must contain either `1st`/`2nd` or `rally_1st`/`rally_2nd` columns.")
+
+
+def _safe_player_id(value: Any) -> int | None:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
 def load_and_clean(path: str | Path) -> pd.DataFrame:
     """
     Carica il .parquet da data/processed/ e restituisce un DataFrame
@@ -13,78 +46,66 @@ def load_and_clean(path: str | Path) -> pd.DataFrame:
     Colonne attese in input (nomi Sackmann, già puliti da filter.py):
         Pt, set1, set2, Gm1, Gm2, Pts, Gm#, Svr, 1st, 2nd, PtWinner
     """
-    df = pd.read_parquet(Path(path))
- 
-    # ── 1. Rinomina per leggibilità ───────────────────────────────────────────
-    df = df.rename(columns={
-        "Pt":       "point_num",
-        "Gm1":      "gm1",
-        "Gm2":      "gm2",
-        "Pts":      "score_in_game",
-        "Gm#":      "game_num",
-        "Svr":      "server",
-        "1st":      "rally_1st",
-        "2nd":      "rally_2nd",
-        "PtWinner": "point_winner",
-    })
- 
-    # Drop colonne che filter.py potrebbe non aver ancora rimosso
-    df = df.drop(columns=["match_id", "TbSet", "Notes"], errors="ignore")
- 
-    # ── 2. Set number logico (1, 2, 3) ───────────────────────────────────────
-    df["set_number"] = (
-        (df["set1"] + df["set2"])
-        .ne((df["set1"] + df["set2"]).shift())
-        .cumsum()
-        .astype(int)
-    )
- 
-    # ── 3. Parsing MBP ────────────────────────────────────────────────────────
-    first_parsed  = df["rally_1st"].apply(parse_rally_string).apply(pd.Series)
-    second_parsed = df["rally_2nd"].apply(parse_rally_string).apply(pd.Series)
- 
-    first_parsed.columns  = [f"first_{c}"  for c in first_parsed.columns]
-    second_parsed.columns = [f"second_{c}" for c in second_parsed.columns]
- 
-    df = pd.concat([df, first_parsed, second_parsed], axis=1)
- 
-    # ── 4. Feature aggregate per punto ───────────────────────────────────────
-    # Il primo servizio è "in" se NON termina con @
-    df["is_first_serve_in"] = ~df["rally_1st"].str.endswith("@", na=True)
- 
-    # Lunghezza rally (usa il servizio che ha effettivamente giocato)
-    df["rally_length"] = np.where(
-        df["is_first_serve_in"],
-        df["first_rally_length"],
-        df["second_rally_length"],
-    )
- 
-    # Ace e doppio fallo
-    df["is_ace"]          = df["first_is_ace"]
-    df["is_double_fault"] = df["second_is_ace"]
- 
-    # Winner diretto
-    df["is_winner_pt"] = (
-        df["first_is_winner"] | df["second_is_winner"]
-    ) & ~df["is_ace"]
- 
-    # Ultimo colpo (per Court Graphics e Radar Chart)
-    df["last_shot_type"] = np.where(
-        df["is_first_serve_in"],
-        df["first_last_shot_type"],
-        df["second_last_shot_type"],
-    )
-    df["last_shot_direction"] = np.where(
-        df["is_first_serve_in"],
-        df["first_last_shot_direction"],
-        df["second_last_shot_direction"],
-    )
- 
-    # ── 5. Etichette leggibili ────────────────────────────────────────────────
-    df["server_name"]       = df["server"].map({1: "Sinner", 2: "Alcaraz"})
-    df["point_winner_name"] = df["point_winner"].map({1: "Sinner", 2: "Alcaraz"})
- 
-    return df.reset_index(drop=True)
+    raw_df = pd.read_parquet(Path(path))
+    first_col, second_col = _resolve_rally_columns(raw_df)
+
+    parsed_records = raw_df.apply(
+        lambda row: parse_point_row(row.to_dict(), first_col=first_col, second_col=second_col),
+        axis=1,
+    ).tolist()
+
+    rows: list[dict[str, Any]] = []
+
+    for raw_row, parsed in zip(raw_df.to_dict("records"), parsed_records):
+        derived = parsed.get("derived") or {}
+        flags = parsed.get("flags") or {}
+        active_point = parsed.get("active_point") or {}
+        rally = active_point.get("rally") or []
+
+        server_id = _safe_player_id(raw_row.get("Svr", raw_row.get("server")))
+        winner_id = _safe_player_id(raw_row.get("PtWinner", raw_row.get("point_winner")))
+        score_in_game = raw_row.get("Pts", raw_row.get("score_in_game"))
+
+        last_shot_type = derived.get("terminal_shot_type")
+        last_shot_direction = None
+        if rally:
+            last_shot_direction = rally[-1].get("direction")
+
+        rows.append(
+            {
+                "point_num": raw_row.get("Pt", raw_row.get("point_num")),
+                "set_number": parsed.get("meta", {}).get("set"),
+                "gm1": raw_row.get("Gm1", raw_row.get("gm1")),
+                "gm2": raw_row.get("Gm2", raw_row.get("gm2")),
+                "game_num": raw_row.get("Gm#", raw_row.get("game_num")),
+                "score_in_game": score_in_game,
+                "server": server_id,
+                "point_winner": winner_id,
+                "server_name": {1: "Sinner", 2: "Alcaraz"}.get(server_id, "Unknown"),
+                "point_winner_name": {1: "Sinner", 2: "Alcaraz"}.get(winner_id, "Unknown"),
+                "serve_number_played": derived.get("serve_number_played"),
+                "serve_direction": derived.get("serve_direction"),
+                "serve_outcome": derived.get("serve_outcome"),
+                "rally_length": derived.get("rally_length"),
+                "return_depth": derived.get("return_depth"),
+                "return_direction": derived.get("return_direction"),
+                "terminal_actor": derived.get("terminal_actor"),
+                "terminal_shot_type": derived.get("terminal_shot_type"),
+                "terminal_outcome": derived.get("terminal_outcome"),
+                "has_second_serve": bool(flags.get("has_second_serve")),
+                "first_serve_fault": bool(flags.get("first_serve_fault")),
+                "double_fault": bool(flags.get("double_fault")),
+                "is_first_serve_in": not bool(flags.get("first_serve_fault")),
+                "is_ace": derived.get("serve_outcome") == "ace",
+                "is_double_fault": bool(flags.get("double_fault")),
+                "is_winner_pt": bool(winner_id is not None and server_id is not None and winner_id == server_id),
+                "court_side": get_court_side(score_in_game),
+                "last_shot_type": last_shot_type,
+                "last_shot_direction": last_shot_direction,
+            }
+        )
+
+    return pd.DataFrame(rows).reset_index(drop=True)
  
  
 # ═══════════════════════════════════════════════════════
@@ -112,4 +133,3 @@ if __name__ == "__main__":
     print(f"  Winners totali:   {df['is_winner_pt'].sum()}")
     print(f"  1° servizio in:   {df['is_first_serve_in'].mean():.1%}")
     print(f"  Rally medio:      {df['rally_length'].mean():.1f} colpi")
- 

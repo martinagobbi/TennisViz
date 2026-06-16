@@ -4,10 +4,10 @@ app.py
 Roland Garros 2025 – Tennis DataViz Dashboard
 Sinner vs Alcaraz
 
-Unifica 3 visualizzazioni interattive in un'unica Dashboard Streamlit:
-  1. Court Chart (Analisi Servizi delle compagne)
-  2. Radar Chart (Analisi Stili di Gioco - Formule validate)
-  3. Mirror Line Chart (Probabilità di Vittoria e Momentum)
+Combines three interactive views into a single Streamlit dashboard:
+    1. Court Chart (serve analysis)
+    2. Radar Chart (playstyle analysis with validated formulas)
+    3. Mirror Line Chart (win probability and momentum)
 """
 
 import hashlib
@@ -20,14 +20,14 @@ import streamlit as st
 import sys
 
 # =====================================================================
-# 1. COSTANTI GEOMETRICHE & STILI (Dalle tue compagne)
+# 1. GEOMETRIC CONSTANTS & STYLES
 # =====================================================================
 COURT_WIDTH = 8.23        # larghezza singolo (metri)
 HALF_LEN    = 11.885      # lunghezza mezzo campo (rete → baseline)
 SVC_LEN     = 6.40        # rete → service line
 THIRD       = (COURT_WIDTH / 2) / 3   # ≈ 1.372 m (ampiezza di ciascuna delle 3 zone)
 
-# Centroidi X per il campionamento dei servizi
+# X centroids for serve sampling
 def _cx(side: str, direction: str) -> float:
     if side == "Deuce":
         mapping = {
@@ -35,7 +35,7 @@ def _cx(side: str, direction: str) -> float:
             "body":        (THIRD + 2 * THIRD) / 2,
             "out_wide":    (2 * THIRD + COURT_WIDTH / 2) / 2,
         }
-    else:  # Ad
+    else:  # Ad side
         mapping = {
             "down_the_T": (-THIRD + 0) / 2,
             "body":        (-2 * THIRD + -THIRD) / 2,
@@ -56,8 +56,8 @@ MARGIN_X = 0.04
 MARGIN_Y = 0.08
 
 PLAYER_COLORS = {
-    "J. Sinner":  "#4A90E2",   # Blu Sinner
-    "C. Alcaraz": "#E87D3E",   # Arancio Alcaraz
+    "J. Sinner":  "#4A90E2",   # Sinner blue
+    "C. Alcaraz": "#E87D3E",   # Alcaraz orange
 }
 
 OUTCOME_SYMBOLS = {
@@ -75,7 +75,7 @@ OUTCOME_SIZE = {
 SERVE_OPACITY = {1: 1.0, 2: 0.55}
 
 # =====================================================================
-# 2. FUNZIONI DI SUPPORTO & CAMPIONAMENTO (Dalle tue compagne)
+# 2. SUPPORTING FUNCTIONS & SAMPLING
 # =====================================================================
 def stable_seed(row_id: int | str) -> int:
     return int(hashlib.md5(str(row_id).encode()).hexdigest(), 16) % (2**31)
@@ -120,7 +120,7 @@ def get_serve_coords(direction: str, side: str, row_id: int | str = 0) -> tuple[
     return float(np.clip(x, x_min + MARGIN_X, x_max - MARGIN_X)), float(np.clip(y, MARGIN_Y, SVC_LEN - MARGIN_Y))
 
 # =====================================================================
-# 3.DISEGNO GEOMETRIA CAMPO PLOTLY (Dalle tue compagne)
+# 3. PLOTLY COURT GEOMETRY
 # =====================================================================
 CLAY    = "#C0544A"
 NET     = "#1a1a1a"
@@ -153,7 +153,7 @@ def court_annotations() -> list[dict]:
     return labels
 
 # =====================================================================
-# 4. PARSER LOGS INTERMEDI DEL MATCH CHARTING PROJECT
+# 4. MATCH CHARTING PROJECT PARSING HELPERS
 # =====================================================================
 def is_break_point(pts_str, server_id, target_player_id):
     if pd.isna(pts_str) or target_player_id == server_id:
@@ -181,7 +181,7 @@ def extract_shot_info(rally_str):
     return terminal_shot, outcome, is_ace
 
 def classify_outcome_mcp(row):
-    # Funzione ponte per mappare i codici MCP sugli esiti richiesti dal Court Chart
+    # Bridge function mapping MCP codes to the outcomes required by the Court Chart.
     rally = row['2nd'] if pd.notna(row['2nd']) else row['1st']
     _, outcome, is_ace = extract_shot_info(rally)
     if is_ace: return "ace"
@@ -189,7 +189,7 @@ def classify_outcome_mcp(row):
     return "lost"
 
 # =====================================================================
-# 5. CARICAMENTO DATI ROBUSTO (.PARQUET)
+# 5. ROBUST DATA LOADING (.PARQUET)
 # =====================================================================
 st.set_page_config(page_title="RG25 – Sinner vs Alcaraz Dashboard", layout="wide")
 
@@ -211,13 +211,13 @@ def load_and_prepare_data():
         
     df = df.sort_values(by='Pt').reset_index(drop=True)
     
-    # Integrazione colonne strutturali per i filtri di Streamlit
+    # Add structural columns used by the Streamlit filters.
     df["server_name"] = df['Svr'].map({1: PLAYER_1, 2: PLAYER_2})
     df["court_side"] = np.where(df['Pt'] % 2 == 0, "Ad", "Deuce")
     df["serve_number"] = np.where(df['2nd'].isna(), 1, 2)
     df["set_number"] = df['Set1'] + df['Set2'] + 1
     
-    # Parsing delle direzioni dal primo carattere numerico del codice MCP
+    # Parse serve directions from the first numeric character in the MCP code.
     def parse_dir(x):
         if pd.isna(x): return "body"
         c = str(x)[0]
@@ -233,7 +233,7 @@ def load_and_prepare_data():
 _RAW_DF = load_and_prepare_data()
 
 # =====================================================================
-# 6. SIDEBAR FILTRI GLOBALI
+# 6. GLOBAL SIDEBAR FILTERS
 # =====================================================================
 st.sidebar.header("🎛️ Filtri della Sessione")
 sets_available = sorted(_RAW_DF["set_number"].dropna().unique().tolist())
@@ -243,14 +243,14 @@ dff = _RAW_DF.copy()
 if sel_set != "Tutti i Set":
     dff = dff[dff["set_number"] == sel_set]
 
-# Titoli Dashboard principale
+# Main dashboard titles
 st.markdown("<h1 style='text-align: center; color: #2C3E50;'>🎾 Roland Garros 2025 Dashboard</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #7F8C8D; font-size:16px;'>Studio Multidimensionale Avanzato: Jannik Sinner vs Carlos Alcaraz</p>", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs(["🎯 Court Chart (Servizi)", "🕸️ Radar Chart (Stile di Gioco)", "📈 Mirror Line Chart (Progressione)"])
 
 # =====================================================================
-# TAB 1: COURT CHART (Interattività Plotly)
+# TAB 1: COURT CHART (Plotly interactivity)
 # =====================================================================
 with tab1:
     st.subheader("Mappatura Spaziale e Distribuzione dei Servizi")
@@ -266,7 +266,7 @@ with tab1:
     if sel_serve == "Solo 1°": dff_court = dff_court[dff_court["serve_number"] == 1]
     elif sel_serve == "Solo 2°": dff_court = dff_court[dff_court["serve_number"] == 2]
 
-    # Generazione Plotly Figure
+    # Build the Plotly figure
     fig_court = go.Figure()
     fig_court.update_layout(
         shapes=court_shapes(), annotations=court_annotations(),
@@ -305,7 +305,7 @@ with tab1:
     st.plotly_chart(fig_court, width="stretch")
 
 # =====================================================================
-# TAB 2: RADAR CHART (Formule Validate e Logs in Chiaro)
+# TAB 2: RADAR CHART (validated formulas and readable logs)
 # =====================================================================
 with tab2:
     st.subheader("Analisi Quantitativa delle Performance e dello Stile")
@@ -341,7 +341,7 @@ with tab2:
         else:
             logs.append("Servizi insufficienti in questo set.")
 
-        # 3. BASELINE DOMINANCE (Scambi > 4 colpi)
+        # 3. BASELINE DOMINANCE (rallies longer than four shots)
         r_lens = df_filtered.apply(lambda r: len(re.findall(r'[fbrsvzuylmhiqt]', str(r['1st']))) + len(re.findall(r'[fbrsvzuylmhiqt]', str(r['2nd']))), axis=1)
         base_pts = df_filtered[r_lens > 4]
         base_dom = len(base_pts[base_pts['PtWinner'] == player_id]) / len(base_pts) if len(base_pts) > 0 else 0
@@ -356,7 +356,7 @@ with tab2:
         ret_eff = len(return_pts[return_pts['PtWinner'] == player_id]) / len(return_pts) if len(return_pts) > 0 else 0
         logs.append(f"<b>Return Efficiency</b>: {ret_eff:.2f} (Punti vinti in risposta: {len(return_pts[return_pts['PtWinner'] == player_id])}/{len(return_pts)})")
 
-        # 6 & 7. GROUNDSTROKES (Rovescio e Dritto)
+        # 6 & 7. GROUNDSTROKES (backhand and forehand)
         bh_tot, bh_won, fh_win, tot_win = 0, 0, 0, 0
         for _, r in df_filtered.iterrows():
             rally = r['2nd'] if pd.notna(r['2nd']) else r['1st']
@@ -379,7 +379,7 @@ with tab2:
     v_alcaraz, logs_alcaraz = calc_radar_metrics(2, dff)
     categories = ['Serve Efficiency', 'Serve Quality', 'Baseline Dominance', 'Break Point Conversion', 'Return Efficiency', 'Backhand Solidity', 'Forehand Dominance']
 
-    # Costruzione Poligoni Radar
+    # Build radar polygons
     fig_radar = go.Figure()
     fig_radar.add_trace(go.Scatterpolar(r=v_sinner + [v_sinner[0]], theta=categories + [categories[0]], fill='toself', name=PLAYER_1, line_color=PLAYER_COLORS[PLAYER_1], fillcolor='rgba(74, 144, 226, 0.25)'))
     fig_radar.add_trace(go.Scatterpolar(r=v_alcaraz + [v_alcaraz[0]], theta=categories + [categories[0]], fill='toself', name=PLAYER_2, line_color=PLAYER_COLORS[PLAYER_2], fillcolor='rgba(232, 125, 62, 0.25)'))
@@ -400,19 +400,19 @@ with tab2:
         for log in logs_alcaraz: st.markdown(f"- {log}")
 
 # =====================================================================
-# TAB 3: MIRROR LINE CHART (Andamento della Partita)
+# TAB 3: MIRROR LINE CHART (match progression)
 # =====================================================================
 with tab3:
     st.subheader("Win Probability & Match Momentum Progression")
     st.write("Visualizzazione dinamica dell'andamento psicofisico e del vantaggio probabilistico punto per punto.")
 
-    # Il momentum deve essere calcolato sempre sulla storia intera del match per coerenza statistica
+    # Momentum must always be computed on the full match history for statistical consistency.
     momentum = []
     current_momentum = 0
     for _, row in _RAW_DF.iterrows():
         set_diff = row['Set1'] - row['Set2']
         gm_diff = row['Gm1'] - row['Gm2']
-        current_momentum *= 0.96  # Fattore di decadimento della memoria storica
+        current_momentum *= 0.96  # Historical-memory decay factor.
         if row['PtWinner'] == 1: current_momentum += 1.8
         elif row['PtWinner'] == 2: current_momentum -= 1.8
         momentum.append((set_diff * 28) + (gm_diff * 10) + current_momentum)
@@ -421,14 +421,14 @@ with tab3:
     end_sets = _RAW_DF[_RAW_DF['Set1'] + _RAW_DF['Set2'] > _RAW_DF['Set1'].shift(1).fillna(0) + _RAW_DF['Set2'].shift(1).fillna(0)].index.tolist()
 
     fig_line = go.Figure()
-    # Area Sinner
+    # Sinner area
     fig_line.add_trace(go.Scatter(x=_RAW_DF['Pt'], y=np.where(_RAW_DF['Win_Prob'] > 50, _RAW_DF['Win_Prob'], 50), fill='tonexty', fillcolor='rgba(74, 144, 226, 0.4)', line=dict(color=PLAYER_COLORS[PLAYER_1]), name=PLAYER_1, hovertemplate="Punto %{x}<br>Win Prob: %{y:.1f}% Sinner<extra></extra>"))
-    # Area Alcaraz
+    # Alcaraz area
     fig_line.add_trace(go.Scatter(x=_RAW_DF['Pt'], y=np.where(_RAW_DF['Win_Prob'] < 50, _RAW_DF['Win_Prob'], 50), fill='tonexty', fillcolor='rgba(232, 125, 62, 0.4)', line=dict(color=PLAYER_COLORS[PLAYER_2]), name=PLAYER_2, hovertemplate="Punto %{x}<br>Win Prob: %{y:.1f}% Alcaraz<extra></extra>"))
     
     fig_line.add_hline(y=50, line_dash="dash", line_color="#333", opacity=0.6)
 
-    # Linee di demarcazione dei set conclusi
+    # Set boundary lines
     for i, idx in enumerate(end_sets):
         fig_line.add_vline(x=_RAW_DF.loc[idx, 'Pt'], line_dash="dot", line_color="#7F8C8D")
         fig_line.add_annotation(x=_RAW_DF.loc[idx, 'Pt'], y=92, text=f"Fine Set {i+1}", textangle=-90, font=dict(color="#34495E"), showarrow=False)

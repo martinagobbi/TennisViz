@@ -9,13 +9,13 @@ from scipy.stats import gaussian_kde
 
 def load_data(path: str | None = None, raw: list | None = None) -> pd.DataFrame:
     """
-    Carica i dati dal parser.
+    Load data produced by the parser.
 
-    Puoi passare:
-        path  → percorso a un file .json (array di punti)
-        raw   → lista Python già in memoria
+    You can pass:
+        path  -> path to a .json file (array of points)
+        raw   -> Python list already in memory
 
-    La funzione appiattisce derived / flags / meta in colonne singole.
+    The function flattens derived / flags / meta into individual columns.
     """
     if raw is None and path is None:
         raise ValueError("Passa 'path' o 'raw'.")
@@ -76,7 +76,7 @@ def legend_patches(pairs):
     return [mpatches.Patch(color=c, label=l) for c, l in pairs]
 
 def kde(data: pd.Series, points: int = 200, bw_method: float = 0.4):
-    """Restituisce (x, y) per il KDE plot."""
+    """Return (x, y) coordinates for the KDE plot."""
     kde_func = gaussian_kde(data, bw_method=bw_method)
     x = np.linspace(data.min(), data.max(), points)
     return x, kde_func(x)

@@ -1,28 +1,39 @@
-import json
-import sys
+"""Batch analysis entrypoint for TennisViz.
+
+This script is separate from `src/app.py`:
+- `src/app.py` is the Streamlit dashboard.
+- `main.py` runs the offline parsing + EDA pipeline.
+"""
+
 from pathlib import Path
+import json
+
 import pandas as pd
-from src.data.parser import parse_point_row
+
 from src.EDA.eda_analysis import run_all
+from src.data.parser import parse_point_row
 
-sys.path.append(str(Path(__file__).parent))
 
-path = Path("data") / "processed" / "sinner_alcaraz_2025.parquet"
+def main() -> None:
+    project_root = Path(__file__).resolve().parent
+    data_path = project_root / "data" / "processed" / "sinner_alcaraz_2025.parquet"
+    output_path = project_root / "match_parsed.json"
 
-# 1. Carica il parquet (è già una sola partita, nessun filtro necessario)
-df = pd.read_parquet(path)
+    # Load the processed parquet for the match already extracted from the raw dataset.
+    df = pd.read_parquet(data_path)
 
-# 2. Converti ogni riga in un punto parsato
-punti = []
-for _, row in df.iterrows():
-    parsed = parse_point_row(row.to_dict())
-    punti.append(parsed)
+    # Parse each row into the structured point representation used by the EDA layer.
+    points = [parse_point_row(row.to_dict()) for _, row in df.iterrows()]
 
-# 3. Salva il JSON per ispezionarlo (opzionale ma utile)
-with open("match_parsed.json", "w", encoding="utf-8") as f:
-    json.dump(punti, f, ensure_ascii=False, indent=2)
+    # Save the parsed match to JSON for inspection or debugging.
+    with output_path.open("w", encoding="utf-8") as file_handle:
+        json.dump(points, file_handle, ensure_ascii=False, indent=2)
 
-print(f"Parsati {len(punti)} punti.")
+    print(f"Parsed {len(points)} points.")
 
-# 4. Lancia l'EDA
-run_all(raw=punti)
+    # Run the exploratory analysis pipeline.
+    run_all(raw=points)
+
+
+if __name__ == "__main__":
+    main()

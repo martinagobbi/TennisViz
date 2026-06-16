@@ -18,8 +18,7 @@ from .helper import load_data, save, kde
 
 warnings.filterwarnings("ignore")
 
-# ─── SECTION 1 – MATCH OVERVIEW ───────────────────────────────────────────────
-
+# SECTION 1 – MATCH OVERVIEW
 def plot_1_summary_table(df: pd.DataFrame):
     """Summary table of points, aces, double faults, data quality."""
     tot = len(df)
@@ -69,7 +68,7 @@ def plot_1_summary_table(df: pd.DataFrame):
     ax.set_title("1.1 — Match Summary", fontweight="bold", pad=12, loc="left")
     save(fig, "1_match_summary")
 
-# ─── SECTION 2 – SERVE AND RETURN ─────────────────────────────────────────────
+# SECTION 2 – SERVE AND RETURN
 
 def plot_2_serve_efficiency(df: pd.DataFrame):
     """
@@ -117,8 +116,8 @@ def plot_2_serve_efficiency(df: pd.DataFrame):
 
 def plot_3_serve_direction(df: pd.DataFrame):
     """
-    Stacked bar: frequenza direzioni 4=Wide, 5=Body, 6=T
-    separata per 1° e 2° servizio e per giocatore.
+    Stacked bar: frequency of serve directions 4=Wide, 5=Body, 6=T,
+    split by 1st and 2nd serve and by player.
     """
     dir_map   = {"out_wide": "Wide (4)", "body": "Body (5)", "down_the_T": "T (6)"}
     dir_order = ["Wide (4)", "Body (5)", "T (6)"]
@@ -159,25 +158,25 @@ def plot_3_serve_direction(df: pd.DataFrame):
 def plot_4_return(df: pd.DataFrame):
     """
     Due sub-plot:
-    (a) Frequenza profondità risposta (short/mid/deep) – bar chart
-    (b) % punti vinti in risposta su 1° vs 2° – grouped bar
+    (a) Return depth frequency (short/mid/deep) – bar chart
+    (b) % points won on return vs 1st/2nd – grouped bar
     """
     depth_map   = {"short":"Short (7)", "mid":"Medium (8)", "deep":"Deep (9)"}
     depth_order = ["Short (7)", "Medium (8)", "Deep (9)"]
-    #depth_colors= {"Corta (7)":"#BA7517","Media (8)":"#378ADD","Profonda (9)":"#0F6E56"}
+    # depth_colors = {"Short (7)": "#BA7517", "Medium (8)": "#378ADD", "Deep (9)": "#0F6E56"}
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
 
     # (a) profondità risposta
     for pid, pname, col in [(SINNER_ID,"Sinner",C_SINNER),(ALCARAZ_ID,"Alcaraz",C_ALCARAZ)]:
-        # come returner: server è l'avversario
+        # as returner, the server is the opponent
         ret = df[df["server"] != pid].copy()
         ret["dep_label"] = ret["return_depth"].map(depth_map).fillna("Unknown")
         cnts = ret["dep_label"].value_counts()
         tot  = len(ret) or 1
         for d in depth_order:
             pval = cnts.get(d,0)/tot*100
-        # subplot a barre raggruppate per profondità
+        # grouped bar subplot for return depth
     x = np.arange(len(depth_order)); w = 0.35
     for offset, (pid, pname, col) in enumerate([
         (SINNER_ID,"Sinner",C_SINNER),
@@ -216,7 +215,7 @@ def plot_4_return(df: pd.DataFrame):
     fig.suptitle("2.3 — The Return", fontweight="bold", x=0.02, ha="left")
     save(fig, "4_return")
 
-# ─── SEZIONE 3 – IL PALLEGGIO ─────────────────────────────────────────────────
+# SECTION 3 – THE RALLY
 
 def plot_5_rally_length(df: pd.DataFrame):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
@@ -243,7 +242,7 @@ def plot_5_rally_length(df: pd.DataFrame):
     ax1.legend(frameon=False)
     ax1.set_title("(a) Rally Length Distribution by Server", fontweight="bold")
 
-    # (b) istogramma raggruppato + % punti vinti per categoria
+    # (b) grouped histogram + % points won per category
     cats = ["Short (1–4)", "Medium (5–8)", "Long (9+)"]
     x = np.arange(len(cats)); w = 0.35
     for offset, (pid, pname, col, lcol) in enumerate([
@@ -270,12 +269,12 @@ def plot_5_rally_length(df: pd.DataFrame):
     save(fig, "5_rally_length")
 
 
-# ─── MAIN ─────────────────────────────────────────────────────────────────────
+# MAIN
 
 def run_all(path: str | None = None, raw: list | None = None):
-    """
-    Executes the entire EDA and saves all plots in ./figures/.
-    Called from main.py with run_all(raw=point_list).
+    """Run the full EDA pipeline and save all plots in `./figures/`.
+
+    Called from `main.py` as `run_all(raw=point_list)`.
     """
     print("Loading data…")
     df = load_data(path=path, raw=raw)

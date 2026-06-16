@@ -162,12 +162,12 @@ def parse_point_code(code: str | None, serve_number: int = 1) -> ParsedPoint | N
 
     if idx < len(raw) and raw[idx] in FAULT_TYPE:
         fault_code = raw[idx]
-        # il let ('c') non è un fault se è seguito da altri caratteri:
-        # significa che la palla ha toccato il nastro ma è entrata
-        # e il punto è stato giocato normalmente
+        # A let ('c') is not a fault if it is followed by other characters:
+        # it means the ball touched the net tape, stayed in play, and the
+        # point continued normally.
         if fault_code == "c" and idx + 1 < len(raw):
             serve.raw += fault_code
-            idx += 1  # salta il 'c' e continua a parsare il rally
+            idx += 1  # skip the 'c' and continue parsing the rally
             warnings.append("Let sul servizio (c): punto rigiocato, non contato come fault")
         else:
             serve.fault_code = fault_code
@@ -278,18 +278,18 @@ def parse_point_row(
         and second_point.serve.is_fault
     )
 
-    # Determina il vincitore del punto dalla colonna "PtWinner" (1 o 2)
+    # Determine the point winner from the "PtWinner" column (1 or 2).
     pt_winner = str(row.get("PtWinner", "")).strip()
     server    = str(row.get("Svr", "")).strip()
     set_num   = row.get("Set", None)
     game_num  = row.get("Game", None)
 
-    # Break point: la colonna "Pts" nel CSV Sackmann contiene "BP" se è un BP
+    # Break point: the Sackmann "Pts" column contains "BP" on break points.
     pts_flag      = str(row.get("Pts", "")).strip()
     is_break_point = "BP" in pts_flag
 
-    # Tie-break: il game è un TB se il punteggio inizia con "0-0" e siamo oltre game 12
-    # oppure usa la colonna "TBpt" se presente
+    # Tie-break: the game is a TB if the score starts with "0-0" and we are
+    # past game 12, or if the "TBpt" column is present.
     is_tiebreak = str(row.get("TBpt", "")).strip() == "1"
 
     all_warnings = []

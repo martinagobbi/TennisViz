@@ -26,7 +26,7 @@ PLAYER_2_ID = 2
 # 2. MATCH CHARTING PROJECT PARSER
 # ==========================================
 def is_break_point(pts_str, server_id, target_player_id):
-    """Determina se il punteggio attuale è palla break per il giocatore target."""
+    """Determine whether the current score is a break point for the target player."""
     if pd.isna(pts_str) or target_player_id == server_id:
         return False
     
@@ -37,14 +37,14 @@ def is_break_point(pts_str, server_id, target_player_id):
     return False
 
 def extract_shot_info(rally_str):
-    """Analizza la stringa MCP per estrarre tipo di colpo finale, outcome e se è ace."""
+    """Parse an MCP rally string and extract the terminal shot, outcome, and ace flag."""
     if pd.isna(rally_str):
         return None, None, False
     
-    # Verifica se è un Ace (contiene * e non ha lettere di scambi)
+    # Check whether this is an ace (contains * and no rally letters).
     is_ace = '*' in str(rally_str) and len(re.findall(r'[fbrsvzuylmhiqt]', str(rally_str))) == 0
     
-    # Estrae tutti i colpi (lettere)
+    # Extract all shots (letters).
     shots = re.findall(r'([fbrsvzuylmhiqt][0-3]?[7-9]?[\+\-\=\;\^]?[\*\@\#nwdxe\!]?)', str(rally_str))
     
     terminal_shot = None
@@ -52,10 +52,10 @@ def extract_shot_info(rally_str):
     
     if shots:
         last_shot = shots[-1]
-        # Classificazione Dritto (f, r, v, u, l, h, j)
+        # Forehand classification (f, r, v, u, l, h, j)
         if last_shot[0] in ['f', 'r', 'v', 'u', 'l', 'h', 'j']:
             terminal_shot = 'forehand'
-        # Classificazione Rovescio (b, s, z, y, m, i, k)
+        # Backhand classification (b, s, z, y, m, i, k)
         elif last_shot[0] in ['b', 's', 'z', 'y', 'm', 'i', 'k']:
             terminal_shot = 'backhand'
             
@@ -78,7 +78,8 @@ def calculate_metrics_with_debug(player_name, player_id, df):
     total_serves = len(serves_df)
     
     if total_serves > 0:
-        # La prima è "in" se non inizia con un numero (direzione) seguito da codice errore (n,w,d,x,e,g)
+        # The first serve is "in" if it does not start with a number (direction)
+        # followed by an error code (n, w, d, x, e, g).
         first_in_mask = ~serves_df['1st'].astype(str).str.match(r'^[4560][nwdexg]')
         first_in = first_in_mask.sum()
         
@@ -94,7 +95,7 @@ def calculate_metrics_with_debug(player_name, player_id, df):
         
         aces = serves_df.apply(lambda row: extract_shot_info(row['1st'])[2] or extract_shot_info(row['2nd'])[2], axis=1).sum()
         
-        # Doppio fallo: anche la seconda palla è un errore
+        # Double fault: the second serve is also an error.
         second_fault_mask = serves_df['2nd'].astype(str).str.match(r'^[4560][nwdexg]')
         double_faults = (second_in_mask & second_fault_mask).sum()
         
@@ -111,13 +112,13 @@ def calculate_metrics_with_debug(player_name, player_id, df):
         serve_eff, serve_qual = 0, 0
 
     # --- 3. BASELINE DOMINANCE ---
-    # Proxy: Punti vinti in scambi con più di 4 colpi
+    # Proxy: points won in rallies longer than four shots.
     rally_lengths = df.apply(lambda row: len(re.findall(r'[fbrsvzuylmhiqt]', str(row['1st']))) + len(re.findall(r'[fbrsvzuylmhiqt]', str(row['2nd']))), axis=1)
     baseline_pts = df[rally_lengths > 4]
     baseline_dom = 0
     if len(baseline_pts) > 0:
         baseline_dom = len(baseline_pts[baseline_pts['PtWinner'] == player_id]) / len(baseline_pts)
-        debug_logs.append(f"Baseline Dominance: {baseline_dom:.3f} (Punti vinti in scambi > 4 colpi)")
+        debug_logs.append(f"Baseline Dominance: {baseline_dom:.3f} (points won in rallies > 4 shots)")
 
     # --- 4. BREAK POINT CONVERSION ---
     bp_mask = df.apply(lambda row: is_break_point(row['Pts'], row['Svr'], player_id), axis=1)
@@ -127,7 +128,7 @@ def calculate_metrics_with_debug(player_name, player_id, df):
         bp_won = len(bp_chances[bp_chances['PtWinner'] == player_id])
         bp_conversion = bp_won / len(bp_chances)
         debug_logs.append(f"Break Point Conversion: {bp_conversion:.3f}")
-        debug_logs.append(f"  ↳ Formula: {bp_won} vinti / {len(bp_chances)} giocati")
+        debug_logs.append(f"  ↳ Formula: {bp_won} won / {len(bp_chances)} played")
 
     # --- 5. RETURN EFFICIENCY ---
     return_pts = df[return_mask]
@@ -158,10 +159,10 @@ def calculate_metrics_with_debug(player_name, player_id, df):
                 fh_winners += 1
 
     bh_solidity = bh_won / bh_total if bh_total > 0 else 0
-    debug_logs.append(f"Backhand Solidity: {bh_solidity:.3f} ({bh_won} vinti col rovescio finale / {bh_total} rovesci finali)")
+    debug_logs.append(f"Backhand Solidity: {bh_solidity:.3f} ({bh_won} won with a backhand finish / {bh_total} backhand finishes)")
 
     fh_dominance = fh_winners / total_winners if total_winners > 0 else 0
-    debug_logs.append(f"Forehand Dominance: {fh_dominance:.3f} ({fh_winners} winner dritto / {total_winners} winner totali)")
+    debug_logs.append(f"Forehand Dominance: {fh_dominance:.3f} ({fh_winners} forehand winners / {total_winners} total winners)")
 
     raw_metrics = [serve_eff, serve_qual, baseline_dom, bp_conversion, return_eff, bh_solidity, fh_dominance]
     scaled_metrics = [m * 10 for m in raw_metrics]
@@ -169,7 +170,7 @@ def calculate_metrics_with_debug(player_name, player_id, df):
     return scaled_metrics, debug_logs
 
 
-# Esecuzione
+# Execution
 val_sinner, logs_sinner = calculate_metrics_with_debug(PLAYER_1, PLAYER_1_ID, df)
 val_alcaraz, logs_alcaraz = calculate_metrics_with_debug(PLAYER_2, PLAYER_2_ID, df)
 
@@ -180,7 +181,7 @@ categories = [
 ]
 
 # ==========================================
-# STAMPA REPORT (Per Martina)
+# PRINT REPORT
 # ==========================================
 print("\n" + "="*70)
 print("🔍 REPORT ANALITICO RADAR CHART")

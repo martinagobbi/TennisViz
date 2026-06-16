@@ -1,18 +1,9 @@
 """
-serve_viz_interactive.py
-------------------------
-Roland Garros 2025 – Analisi Servizi Interattiva
-Sinner vs Alcaraz
-
-Sostituisce il vecchio plot matplotlib con una Dash app interattiva che:
-  1. Disegna mezzo campo in Plotly (SVG shapes, niente matplotlib)
-  2. Usa distribuzioni gaussiane attorno a centroidi stabili (seed fisso per punto)
-  3. Permette di filtrare per set, lato (Deuce/Ad), giocatore
-  4. Distingue con colore (giocatore) + simbolo (esito) + dimensione (1° / 2° servizio)
-
-Avvio:
-    pip install dash plotly pandas numpy
-    python serve_viz_interactive.py
+Main characteristics:
+    1. Draws a half court in Plotly (SVG shapes, no matplotlib)
+    2. Uses Gaussian distributions around stable centroids (fixed seed per point)
+    3. Allows filtering by set, side (Deuce/Ad), and player
+    4. Distinguishes by color (player) + symbol (outcome) + size (1st / 2nd serve)
 """
 
 import hashlib
@@ -25,20 +16,16 @@ import streamlit as st
 import sys
 import traceback
 
-# ─────────────────────────────────────────────
-# 1.  COSTANTI GEOMETRICHE (metri)
-# ─────────────────────────────────────────────
+# 1.  GEOMETRIC CONSTANTS (meters)
 COURT_WIDTH = 8.23        # larghezza singolo
 HALF_LEN    = 11.885      # lunghezza mezzo campo (rete → baseline)
 SVC_LEN     = 6.40        # rete → service line
 
 THIRD = (COURT_WIDTH / 2) / 3   # ≈ 1.372 m  (ampiezza di ciascuna delle 3 zone)
 
-# ─────────────────────────────────────────────
-# 2.  CENTROIDI X  (solo orizzontale; la profondità è campionata a parte)
-# ─────────────────────────────────────────────
+# 2.  X CENTROIDS (horizontal only; depth is sampled separately)
 def _cx(side: str, direction: str) -> float:
-    """Centro x della zona (mid-point geometrico)."""
+    """X center of the zone (geometric midpoint)."""
     if side == "Deuce":
         mapping = {
             "down_the_T": (0 + THIRD) / 2,
@@ -60,28 +47,26 @@ CENTROIDS_X: dict[tuple[str, str], float] = {
     for direction in ("down_the_T", "body", "out_wide")
 }
 
-# Sigma gaussiano laterale (m) – più stretto per rispettare le 3 zone
+# Lateral Gaussian sigma (m) — narrower to stay inside the three zones.
 SIGMA_X = THIRD * 0.28   # ≈ 0.38 m
 
-# Parametri profondità: solo l'ultimo 40% del box è "zona ATP"
+# Depth parameters: only the last 40% of the box is the "ATP zone".
 DEPTH_OFFSET = 0.60          # 60% del box è escluso dal campionamento
 DEPTH_RANGE  = 1.0 - DEPTH_OFFSET   # 0.40 = ampiezza della zona campionabile
 
-# Margini di sicurezza dai bordi (m)
+# Safety margins from the edges (m)
 MARGIN_X = 0.04
 MARGIN_Y = 0.08
 
 
-# ─────────────────────────────────────────────
-# 3.  SEED DETERMINISTICO  +  CAMPIONAMENTO
-# ─────────────────────────────────────────────
+# 3.  DETERMINISTIC SEED + SAMPLING
 def stable_seed(row_id: int | str) -> int:
     return int(hashlib.md5(str(row_id).encode()).hexdigest(), 16) % (2**31)
 
 
 def _sample_depth(rng: np.random.Generator) -> float:
     """
-    Profondità normalizzata [0, 1] nel service box.
+    Normalized depth [0, 1] inside the service box.
     Beta(5, 2) traslata sull'ultimo 40%:
         y_norm = 0.60 + 0.40 * Beta(5, 2)
     → la moda cade ~80-90% della lunghezza del box
@@ -116,16 +101,16 @@ def get_serve_coords(
 ) -> tuple[float, float]:
     """
     Campiona (x, y) con modello ATP/WTA realistico:
-      - profondità:  Beta(5, 2) traslata sull'ultimo 40% del box  →  y realistico
-      - laterale:    gaussiana attorno al centroide di zona  →  x realistico
-      - guardrail:   ellisse di plausibilità + clip ai confini zona
+    - depth: Beta(5, 2) shifted to the last 40% of the box -> realistic y
+    - lateral: Gaussian around the zone centroid -> realistic x
+    - guardrail: plausibility ellipse + clipping to zone bounds
     """
     rng = np.random.default_rng(stable_seed(row_id))
 
-    # ── Profondità (y) ──────────────────────────────────────────────
+    # Depth (y) 
     y = _sample_depth(rng)
 
-    # ── Centroide e limiti laterali (x) ─────────────────────────────
+    # Centroid and lateral bounds (x) 
     cx = CENTROIDS_X.get((side, direction), 0.0)
 
     if side == "Deuce":
@@ -142,7 +127,7 @@ def get_serve_coords(
         }
     x_min, x_max = x_bounds.get(direction, (-COURT_WIDTH / 2, COURT_WIDTH / 2))
 
-    # ── Campionamento x con reject-sampling ─────────────────────────
+    # x sampling with reject-sampling 
     for _ in range(15):
         x = rng.normal(cx, SIGMA_X)
         if x_min + MARGIN_X <= x <= x_max - MARGIN_X:
@@ -150,25 +135,23 @@ def get_serve_coords(
     else:
         x = float(np.clip(cx, x_min + MARGIN_X, x_max - MARGIN_X))
 
-    # ── Ellisse di plausibilità ──────────────────────────────────────
-    # Centro dell'ellisse = centroide zona × profondità modale
+    # Plausibility ellipse 
+    # Ellipse center = zone centroid × modal depth
     cy_modal = (DEPTH_OFFSET + DEPTH_RANGE * (5 / (5 + 2 + 1))) * SVC_LEN  # moda Beta
     rx = (x_max - x_min) * 0.52   # semi-asse orizzontale (leggermente più largo della zona)
     ry = DEPTH_RANGE * SVC_LEN * 0.54  # semi-asse verticale (copre la zona campionabile)
     x, y = _ellipse_guard(x, y, cx, cy_modal, rx, ry)
 
-    # Clip finale di sicurezza
+    # Final safety clip
     x = float(np.clip(x, x_min + MARGIN_X, x_max - MARGIN_X))
     y = float(np.clip(y, MARGIN_Y, SVC_LEN - MARGIN_Y))
 
     return x, y
 
-# ─────────────────────────────────────────────
-# 4.  STILI  (colori, simboli, dimensioni)
-# ─────────────────────────────────────────────
+# 4.  STYLES  (colors, symbols, sizes)
 PLAYER_COLORS = {
-    "Sinner":  "#4A90E2",   # blu Sinner
-    "Alcaraz": "#E87D3E",   # arancio Alcaraz
+    "Sinner":  "#4A90E2",   # Sinner blue
+    "Alcaraz": "#E87D3E",   # Alcaraz orange
 }
 
 OUTCOME_SYMBOLS = {
@@ -194,22 +177,20 @@ def classify_outcome(row: pd.Series) -> str:
     return "lost"
 
 
-# ─────────────────────────────────────────────
-# 5.  DISEGNO CAMPO (Plotly shapes)
-# ─────────────────────────────────────────────
+# 5.  COURT DRAWING (Plotly shapes)
 CLAY    = "#C0544A"
 NET     = "#1a1a1a"
 WHITE   = "white"
 DASHED  = dict(color="rgba(255,255,255,0.45)", width=1, dash="dash")
 
 def court_shapes() -> list[dict]:
-    """Restituisce la lista di shapes Plotly per mezzo campo."""
+    """Return the list of Plotly shapes for a half court."""
     W2 = COURT_WIDTH / 2
     shapes = [
-        # Sfondo terra battuta
+        # Clay background
         dict(type="rect", x0=-W2, x1=W2, y0=0, y1=HALF_LEN,
              fillcolor=CLAY, line_width=0, layer="below"),
-        # Perimetro
+        # Boundary
         dict(type="rect", x0=-W2, x1=W2, y0=0, y1=HALF_LEN,
              fillcolor="rgba(0,0,0,0)", line=dict(color=WHITE, width=2.5)),
         # Service line
@@ -218,16 +199,16 @@ def court_shapes() -> list[dict]:
         # Center service line
         dict(type="line", x0=0, x1=0, y0=0, y1=SVC_LEN,
              line=dict(color=WHITE, width=2)),
-        # Rete
+        # Net
         dict(type="line", x0=-W2, x1=W2, y0=0, y1=0,
              line=dict(color=NET, width=4)),
-        # Paletti rete
+        # Net posts
         dict(type="line", x0=-W2 - 0.12, x1=-W2 - 0.12, y0=0, y1=1.0,
              line=dict(color=NET, width=5)),
         dict(type="line", x0=W2 + 0.12, x1=W2 + 0.12, y0=0, y1=1.0,
              line=dict(color=NET, width=5)),
     ]
-    # Linee tratteggiate zone (Deuce + Ad)
+    # Dashed zone lines (Deuce + Ad)
     for sign in (1, -1):
         for k in (1, 2):
             shapes.append(dict(
@@ -240,7 +221,7 @@ def court_shapes() -> list[dict]:
 
 
 def court_annotations() -> list[dict]:
-    """Etichette zone nel service box."""
+    """Zone labels in the service box."""
     labels = []
     W2 = COURT_WIDTH / 2
     zone_centers = {
@@ -257,7 +238,7 @@ def court_annotations() -> list[dict]:
                 font=dict(color="rgba(255,255,255,0.55)", size=9, family="monospace"),
                 xanchor="center",
             ))
-    # Etichette lato
+    # Side labels
     for sign, side_label in ((1, "DEUCE"), (-1, "AD")):
         labels.append(dict(
             x=sign * W2 / 2, y=SVC_LEN + 0.5,
@@ -269,9 +250,7 @@ def court_annotations() -> list[dict]:
     return labels
 
 
-# ─────────────────────────────────────────────
-# 6.  COSTRUZIONE FIGURA PLOTLY
-# ─────────────────────────────────────────────
+# 6.  BUILD PLOTLY FIGURE
 def build_figure(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.update_layout(
@@ -299,8 +278,8 @@ def build_figure(df: pd.DataFrame) -> go.Figure:
         ),
     )
 
-    # Raggruppa per (player, outcome, serve_number) → 1 trace per gruppo
-    # Così la legenda è pulita e ogni gruppo è togglabile
+    # Group by (player, outcome, serve_number) -> one trace per group.
+    # This keeps the legend clean and each group toggleable.
     grouped = df.groupby(["server_name", "outcome", "serve_number"], dropna=False)
     legend_seen: set[str] = set()
 
@@ -346,14 +325,12 @@ def build_figure(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-# ─────────────────────────────────────────────
-# 7.  PREPARAZIONE DATI  (con fallback sintetico)
-# ─────────────────────────────────────────────
+# 7.  DATA PREPARATION  (with synthetic fallback)
 def prepare_df(df_raw: pd.DataFrame) -> pd.DataFrame:
-    """Aggiunge le colonne derivate necessarie al plotting."""
+    """Add the derived columns required for plotting."""
     df = df_raw.copy()
     
-    # Valori di default se le colonne mancano
+    # Default values when columns are missing
     if "serve_number_played" in df.columns and "serve_number" not in df.columns:
         df = df.rename(columns={"serve_number_played": "serve_number"})
     if "court_side" not in df.columns:
@@ -373,7 +350,7 @@ def prepare_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_synthetic_df(n: int = 200) -> pd.DataFrame:
-    """Dataset sintetico per demo/sviluppo."""
+    """Synthetic dataset for demo/development."""
     rng = np.random.default_rng(42)
     players     = ["Sinner", "Alcaraz"]
     directions  = ["down_the_T", "body", "out_wide"]
@@ -400,75 +377,69 @@ def make_synthetic_df(n: int = 200) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ─────────────────────────────────────────────
 # 8. STREAMLIT APP
-# ─────────────────────────────────────────────
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "processed" / "sinner_alcaraz_2025.parquet"
 
-
 try:
-    # Ensure the project root is on sys.path so absolute imports like `src.*` work
+    # Ensure the project root is on sys.path so absolute imports like `src.*` work.
     project_root = Path(__file__).resolve().parents[2]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
     from src.data.loader import load_and_clean
     _RAW_DF = load_and_clean(DATA_PATH)
-    print("Dataset reale caricato.")
+    print("Dataset loaded.")
 except Exception as exc:
-    # Print full traceback to help debugging when running via Streamlit
+    # Print the full traceback to help debugging when running via Streamlit.
     traceback.print_exc()
-    print(f"Dataset reale non trovato – uso dati sintetici. Dettaglio: {exc}")
+    print(f"Dataset not found – using synthetic data. Details: {exc}")
     _RAW_DF = make_synthetic_df(300)
 
 _DF = prepare_df(_RAW_DF)
 
-# Configurazione pagina
+# Page configuration
 st.set_page_config(
-    page_title="RG25 – Analisi Servizi",
+    page_title="RG25 – Serve Analysis",
     layout="wide",
 )
 
-# Titolo
+# Title
 st.markdown(
     """
     <h1 style='text-align: center; color: black;'>
     🎾 Roland Garros 2025 · Sinner vs Alcaraz
     </h1>
     <p style='text-align: center; color: #BBBBBB;'>
-    Analisi interattiva delle direzioni di servizio
+    Interactive analysis of serve placements in the final match. Filter by set, player, side, and outcome to explore the patterns behind the serves.
     </p>
     """,
     unsafe_allow_html=True,
 )
 
-# ─────────────────────────────────────────────
-# Sidebar filtri
-# ─────────────────────────────────────────────
-
-st.sidebar.header("🎛️ Filtri")
+# Sidebar filters
+st.sidebar.header("🎛️ Filters")
 
 sets_available = sorted(_DF["set_number"].dropna().unique().tolist())
 
 sel_set = st.sidebar.selectbox(
     "Set",
     ["all"] + sets_available,
-    format_func=lambda x: "Tutti i set" if x == "all" else f"Set {x}",
+    format_func=lambda x: "All sets" if x == "all" else f"Set {x}",
 )
 
 sel_player = st.sidebar.selectbox(
-    "Giocatore",
+    "Player",
     ["all", "Sinner", "Alcaraz"],
     format_func=lambda x: {
-        "all": "Entrambi",
+        "all": "Both",
         "Sinner": "Sinner",
         "Alcaraz": "Alcaraz",
     }[x],
 )
 
 sel_side = st.sidebar.selectbox(
-    "Lato",
+    "Court Side",
     ["all", "Deuce", "Ad"],
     format_func=lambda x: {
         "all": "Deuce + Ad",
@@ -478,17 +449,17 @@ sel_side = st.sidebar.selectbox(
 )
 
 sel_serve = st.sidebar.selectbox(
-    "Servizio",
+    "Serve",
     ["all", 1, 2],
     format_func=lambda x: {
-        "all": "1° + 2°",
-        1: "Solo 1° servizio",
-        2: "Solo 2° servizio",
+        "all": "1st + 2nd",
+        1: "1st serve only",
+        2: "2nd serve only",
     }[x],
 )
 
 sel_outcomes = st.sidebar.multiselect(
-    "Esito",
+    "Outcome",
     ["ace", "winner", "lost"],
     default=["ace", "winner", "lost"],
     format_func=lambda x: {
@@ -498,10 +469,7 @@ sel_outcomes = st.sidebar.multiselect(
     }[x],
 )
 
-# ─────────────────────────────────────────────
-# Applicazione filtri
-# ─────────────────────────────────────────────
-
+# Apply filters
 dff = _DF.copy()
 
 if sel_set != "all":
@@ -519,10 +487,7 @@ if sel_serve != "all":
 if sel_outcomes:
     dff = dff[dff["outcome"].isin(sel_outcomes)]
 
-# ─────────────────────────────────────────────
-# Grafico
-# ─────────────────────────────────────────────
-
+# Chart
 fig = build_figure(dff)
 fig.update_layout(
     height=800,
@@ -534,10 +499,7 @@ st.plotly_chart(
     config={"displayModeBar": False},
 )
 
-# ─────────────────────────────────────────────
-# Statistiche
-# ─────────────────────────────────────────────
-
+# Statistics
 st.markdown("---")
 
 col1, col2, col3 = st.columns(3)
@@ -553,15 +515,15 @@ for col, player in zip([col1, col2], ["Sinner", "Alcaraz"]):
 
     col.metric(
         label=player,
-        value=f"{n} servizi",
-        delta=f"{aces} ace · {pct_won:.0f}% punti vinti",
+        value=f"{n} serves",
+        delta=f"{aces} aces · {pct_won:.0f}% points won",
     )
 
 col3.metric(
-    label="Totale servizi",
+    label="Total serves",
     value=len(dff),
 )
 
-# Tabella opzionale
-with st.expander("Visualizza dati filtrati"):
+# Optional table
+with st.expander("Visualize filtered data"):
     st.dataframe(dff, width="stretch")

@@ -5,7 +5,7 @@ import pandas as pd
 
 from .parser import parse_point_row
 
-#  LOADER — legge parquet e costruisce il DataFrame
+#  LOADER — reads the parquet file and builds the dataframe
 
 def get_court_side(score_str: str) -> str:
     if pd.isna(score_str):
@@ -40,10 +40,10 @@ def _safe_player_id(value: Any) -> int | None:
 
 def load_and_clean(path: str | Path) -> pd.DataFrame:
     """
-    Carica il .parquet da data/processed/ e restituisce un DataFrame
-    pulito con tutte le feature derivate pronte per i grafici.
+    Load the .parquet file from `data/processed/` and return a clean
+    dataframe with all derived features ready for charts.
  
-    Colonne attese in input (nomi Sackmann, già puliti da filter.py):
+    Expected input columns (Sackmann names, already cleaned by `filter.py`):
         Pt, set1, set2, Gm1, Gm2, Pts, Gm#, Svr, 1st, 2nd, PtWinner
     """
     raw_df = pd.read_parquet(Path(path))
@@ -109,7 +109,7 @@ def load_and_clean(path: str | Path) -> pd.DataFrame:
  
  
 # ═══════════════════════════════════════════════════════
-#  TEST DA TERMINALE
+#  TERMINAL TEST
 #  python src/data/loader.py data/processed/sinner_alcaraz_2025.parquet
 # ═══════════════════════════════════════════════════════
  
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     df = load_and_clean(path)
  
     print(f"\nShape: {df.shape}")
-    print(f"\nColonne: {df.columns.tolist()}\n")
+    print(f"\nColumns: {df.columns.tolist()}\n")
     print(df[[
         "point_num", "set_number", "server_name", "point_winner_name",
         "is_ace", "is_double_fault", "is_winner_pt",

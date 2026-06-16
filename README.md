@@ -1,34 +1,58 @@
 # 🎾 TennisViz
 
-Data visualization project for the **Sinner vs Alcaraz** match at Roland Garros 2025 (Final, 08/06/2025).
+TennisViz is a tennis data visualization project focused on the
+**Jannik Sinner vs Carlos Alcaraz** Roland Garros 2025 final.
 
-Raw data sourced from the [Tennis Abstract Match Charting Project](https://github.com/JeffSackmann/tennis_MatchChartingProject) by Jeff Sackmann.
+It includes:
+
+- a Streamlit dashboard in `src/app.py`
+- data parsing and preparation utilities in `src/data/`
+- exploratory analysis in `src/EDA/`
+- chart modules in `src/charts/`
+
+Raw data comes from the [Tennis Abstract Match Charting Project](https://github.com/JeffSackmann/tennis_MatchChartingProject) by Jeff Sackmann.
+
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 TennisViz/
 ├── data/
-│   ├── raw/                  # Original CSV from Sackmann's repo
-│   └── processed/            # Filtered .parquet file
+│   ├── raw/
+│   │   └── charting-m-points-2020s.csv
+│   └── processed/
+│       └── sinner_alcaraz_2025.parquet
+├── figures/
+├── outputs/
 ├── src/
-│   ├── data/
-|        ├── filter.py        # Extracts the specific match from the dataset
-|        ├── parser.py        # Parses MBP rally strings into structured features                  
-├── outputs/                  # Charts and exported figures
+│   ├── EDA/
+│   │   ├── eda_analysis.py
+│   │   ├── globals.py
+│   │   └── helper.py
+│   ├── charts/
+│   │   ├── court_chart.py
+│   │   ├── mirror_line.py
+│   │   └── radar.py
+│   └── data/
+│       ├── filter.py
+│       ├── loader.py
+│       └── parser.py
+├── main.py
+├── src/app.py
 ├── requirements.txt
-└── Dockerfile                # (coming soon)
+├── Dockerfile
+└── README.md
 ```
 
 ---
 
 ## ⚙️ Setup
 
-### 1. Create and activate the virtual environment
+### 1. Create and activate a virtual environment
 
 **Windows (PowerShell):**
-```bash
+```powershell
 python -m venv .venv
 .venv\Scripts\Activate
 ```
@@ -47,53 +71,80 @@ pip install -r requirements.txt
 
 ---
 
-## 🔧 Scripts
+## 🚀 Run the project
 
-### `filter.py`
+### Streamlit dashboard
 
-Reads the raw CSV file from Sackmann's dataset (`charting-m-points-2020s.csv`) in chunks to avoid memory issues, filters only the rows corresponding to the Sinner–Alcaraz Roland Garros 2025 final (`match_id = "20250608-M-Roland_Garros-F-Jannik_Sinner-Carlos_Alcaraz"`), and saves the result as a `.parquet` file. We chose this type of columnar binary format because it is significantly faster to read and more memory-efficient than CSV, making it ideal for repeated loading during analysis and visualization.
-Expected output: **385 rows**.
+The main dashboard now starts from `src/app.py`:
 
 ```bash
-python src/filter.py
+streamlit run src/app.py
 ```
 
-Input:  `data/raw/charting-m-points-2020s.csv`  
-Output: `data/processed/sinner_alcaraz_2025.parquet`
+### One-off analysis script
+
+`main.py` loads the processed parquet, parses each point, saves the parsed JSON, and runs the EDA pipeline:
+
+```bash
+python main.py
+```
+
+### Data preparation
+
+`src/data/filter.py` filters the raw Tennis Abstract CSV and creates the processed parquet used by the app:
+
+```bash
+python src/data/filter.py
+```
+
+Expected input:
+
+- `data/raw/charting-m-points-2020s.csv`
+
+Expected output:
+
+- `data/processed/sinner_alcaraz_2025.parquet`
 
 ---
 
-### `parser.py` (in progress)
+## 🧠 Data pipeline
 
-Parses the **MBP (Match Point by Point)** rally strings from Sackmann's format into structured, human-readable features.
+- `src/data/filter.py` extracts the Sinner–Alcaraz match from the raw CSV.
+- `src/data/parser.py` decodes Tennis Abstract point strings into structured features.
+- `src/data/loader.py` loads the processed parquet and prepares a chart-friendly dataframe.
+- `src/EDA/eda_analysis.py` generates exploratory plots and summary tables.
 
-Each rally string encodes a full point as a compact sequence of characters — serve speed, direction, shot types, depths, faults, and outcomes. `parser.py` decodes this into a flat dictionary with fields such as:
+---
 
-| Field | Description |
-|---|---|
-| `serve_speed` | Speed code of the serve (`4`, `5`, `6`) |
-| `serve_direction` | Direction of serve (out wide / body / down the T) |
-| `serve_return_depth` | Depth of the return (short / mid / deep) |
-| `rally_length` | Number of shots in the rally |
-| `fault_type` | Type of fault if any (net / wide / deep / ...) |
-| `serve_outcome` | Ace, forced error, or unforced error |
-| `is_ace` | Whether the point ended with an ace |
-| `is_serve_fault` | Whether the first serve was a fault |
-| `is_winner` | Whether the point ended with a clean winner |
-| `last_shot_type` | Type of the last shot in the rally |
-| `last_shot_direction` | Direction of the last shot |
+## 📊 Visualization modules
 
-The main entry point is `parse_rally_string(s: str) -> dict`, which takes a single MBP string and returns the decoded feature dictionary.
+- `src/app.py`: unified Streamlit dashboard.
+- `src/charts/court_chart.py`: interactive Plotly court chart.
+- `src/charts/radar.py`: radar-style comparison chart.
+- `src/charts/mirror_line.py`: momentum / win-probability style chart.
 
 ---
 
 ## 🐳 Docker
 
-> Containerization with Docker is planned. A `Dockerfile` will be added to the repo.
+Build the image from the repository root:
+
+```bash
+docker build -t tennisviz .
+```
+
+Run the Streamlit app in the container:
+
+```bash
+docker run --rm -p 8501:8501 tennisviz
+```
+
+Then open `http://localhost:8501` in your browser.
 
 ---
 
 ## 📄 License
 
-Data: [tennis_MatchChartingProject](https://github.com/JeffSackmann/tennis_MatchChartingProject) — see original repo for license terms.  
+Data: [tennis_MatchChartingProject](https://github.com/JeffSackmann/tennis_MatchChartingProject) — see the original repository for license terms.
+
 Code: see `LICENSE`.

@@ -391,7 +391,7 @@ st.set_page_config(page_title="RG25 – Serve Chart", layout="wide")
 st.markdown(
     """
     <h1 style='text-align:center;color:black;'>
-    🎾 Court Distribution Plot · Sinner vs Alcaraz
+    Serve Placement - Court Distribution Plot
     </h1>
     <p style='text-align:center;color:#AAAAAA;'>
     Explore Sinner and Alcaraz's serve map at Roland Garros. Filter the data by set, 

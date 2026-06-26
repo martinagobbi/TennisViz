@@ -16,7 +16,7 @@ from pathlib import Path
 # ==========================================
 st.set_page_config(page_title="Match Momentum", layout="wide")
 
-st.markdown("<h2 style='text-align: center;'>📈 Win Probability & Match Momentum Progression</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'>Momentum Progression - Line Chart</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #888;'>This line chart models the real-time narrative and competitive equilibrium of the match by converting point-by-point score variations and historical set/game contexts into a dynamic win probability index. Styled as a \"Tug-of-War,\" the chart uses a central baseline representing a perfect 50% deadlock. As points are played, the momentum line shifts upward toward 100% dominance for Sinner or down toward 100% dominance for Alcaraz.</p>", unsafe_allow_html=True)
 
 # ==========================================

@@ -171,7 +171,7 @@ CATEGORY_DESCRIPTIONS = {
 # ==========================================
 # 5. UI: COMBINED EXPLANATIONS & FILTERS
 # ==========================================
-st.markdown("<h2 style='text-align: center;'>🎾 Tactical Profiles & Playing Style Comparison</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'> Playing Style Comparison - Radar Chart</h2>", unsafe_allow_html=True)
 
 # Kept only the intro div
 st.markdown(

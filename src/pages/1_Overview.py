@@ -8,23 +8,121 @@ import streamlit as st
 # ==========================================
 # 2. HERO HEADER
 # ==========================================
-st.markdown("<h1 style='text-align: center; color: #2C3E50;'>🏆 Roland Garros 2025 Overview</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #7F8C8D; font-size:18px;'>The Five-Set Masterpiece: Jannik Sinner vs Carlos Alcaraz</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #2C3E50;'>Roland Garros 2025 Overview</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #7F8C8D; font-size:18px;'>Jannik Sinner vs Carlos Alcaraz</p>", unsafe_allow_html=True)
 st.markdown("---")
 
+st.markdown("""
+<style>
+div.stPageLink a {
+    display: block;
+    background-color: white ;
+    color: #2C3E50 ;
+    text-align: center;
+    padding: 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 17px;
+    margin-top: 20px;
+
+    border: 2px solid #D5DBDB;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: all 0.25s ease;
+}
+
+div.stPageLink a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    border-color: #C76057;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Box attorno alle metriche */
+.metrics-box {
+    border: 2px solid #C76057;
+    border-radius: 15px;
+    padding: 20px 10px;
+    margin-bottom: 25px;
+}
+
+/* Centra testo metric */
+[data-testid="stMetric"] {
+    text-align: center;
+}
+
+/* Centra label e value */
+[data-testid="stMetricLabel"] {
+    justify-content: center;
+}
+
+[data-testid="stMetricValue"] {
+    justify-content: center;
+}
+</style>
+""", unsafe_allow_html=True)
 # ==========================================
 # 3. QUICK MATCH STATS (KPI BOXES)
 # ==========================================
-# Adding quick visual metrics to make the overview look like a professional sports dashboard
-m1, m2, m3, m4 = st.columns(4)
-with m1:
-    st.metric(label="Match Date", value="June 8, 2025")
-with m2:
-    st.metric(label="Champion", value="Carlos Alcaraz 🇪🇸")
-with m3:
-    st.metric(label="Final Score", value="4-6, 6-7, 6-4, 7-6, 7-6")
+st.markdown("""
+<style>
+.metric-card {
+    border: 2px solid #D5DBDB;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
 
-st.markdown("### 📝 Match Context")
+.metric-label {
+    color: #7F8C8D;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.metric-value {
+    color: #2C3E50;
+    font-size: 24px;
+    font-weight: 700;
+}
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+    <div class="metric-card">
+        <div class="metric-label">Match Date</div>
+        <div class="metric-value">June 8, 2025</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown("""
+    <div class="metric-card">
+        <div class="metric-label">Champion</div>
+        <div class="metric-value">Carlos Alcaraz 🇪🇸</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown("""
+    <div class="metric-card">
+        <div class="metric-label">Final Score</div>
+        <div class="metric-value">4-6, 6-7, 6-4, 7-6, 7-6</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("### Match Context")
 st.write(
     """
     Welcome to the interactive dashboard for analyzing the 2025 Roland Garros Men's Singles Final.
@@ -43,43 +141,50 @@ st.markdown("---")
 # ==========================================
 # 4. THE VISUALIZATIONS (3-COLUMN TEASER GRID)
 # ==========================================
-st.markdown("### 📊 Explore the Dashboard Visualizations")
+st.markdown("### Explore the Dashboard Visualizations")
 st.write("This platform is divided into three analytical layers. Read the briefs below to choose your starting point:")
 
 col1, col2, col3 = st.columns(3)
 
 # --- COLUMN 1: LINE CHART ---
 with col1:
-    st.markdown("#### 1. Win Probability & Momentum")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.markdown("#### Momentum Progression")
     st.write(
         """
         A timeline view of how the match evolved point by point. It tracks momentum shifts and score changes, 
         showing who had control at different stages of the match.
         """
     )
-    st.page_link("pages/2_Line_Chart.py", label="Explore Momentum Progression 📈",
+    st.page_link("pages/2_Line_Chart.py", label="Explore the Line Chart",
                  use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- COLUMN 2: RADAR CHART ---
 with col2:
-    st.markdown("#### 2. Tactical Profiles & Style")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("#### Playing Style Comparison")
     st.write(
         """
         A comparison of Sinner and Alcaraz across seven key performance areas (serve, return, baseline play, 
         and groundstrokes). Values are shown on a 0–100 scale to highlight differences in playing style and strengths..
         """
     )
-    st.page_link("pages/3_Radar_Chart.py", label="Compare Playing Styles 🕸️",
+    st.page_link("pages/3_Radar_Chart.py", label="Explore the Radar Chart",
                  use_container_width=True)
-
+    st.markdown('</div>', unsafe_allow_html=True)
 # --- COLUMN 3: COURT CHART TEASER ---
 with col3:
-    st.markdown("#### 3. Spatial Patterns & Placement")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.markdown("####  Serve Placement")
     st.write(
         """
         A spatial view of shot locations on court. It focuses on serve placement and landing 
         patterns in both the Deuce and Ad courts, helping reveal where points are won or lost.
         """
     )
-    st.page_link("pages/4_Court_Chart.py", label="Analyze Shot Placement 🎯",
+    st.page_link("pages/4_Court_Chart.py", label="Explore the Court Chart",
                  use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)

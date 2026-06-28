@@ -1,11 +1,6 @@
 import streamlit as st
 
 # ==========================================
-# 1. PAGE CONFIGURATION
-# ==========================================
-# st.set_page_config(page_title="RG25 - Match Overview", layout="wide")
-
-# ==========================================
 # 2. HERO HEADER
 # ==========================================
 st.markdown("<h1 style='text-align: center; color: #2C3E50;'>Roland Garros 2025 Overview</h1>", unsafe_allow_html=True)
@@ -15,7 +10,9 @@ st.markdown("---")
 st.markdown("""
 <style>
 div.stPageLink a {
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background-color: white ;
     color: #2C3E50 ;
     text-align: center;
@@ -24,8 +21,7 @@ div.stPageLink a {
     text-decoration: none;
     font-weight: 700;
     font-size: 17px;
-    margin-top: 20px;
-
+    margin-top: 10px;
     border: 2px solid #D5DBDB;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     transition: all 0.25s ease;
@@ -36,11 +32,7 @@ div.stPageLink a:hover {
     box-shadow: 0 8px 16px rgba(0,0,0,0.12);
     border-color: #C76057;
 }
-</style>
-""", unsafe_allow_html=True)
 
-st.markdown("""
-<style>
 /* Box attorno alle metriche */
 .metrics-box {
     border: 2px solid #C76057;
@@ -62,13 +54,8 @@ st.markdown("""
 [data-testid="stMetricValue"] {
     justify-content: center;
 }
-</style>
-""", unsafe_allow_html=True)
-# ==========================================
-# 3. QUICK MATCH STATS (KPI BOXES)
-# ==========================================
-st.markdown("""
-<style>
+
+/* Custom metric cards */
 .metric-card {
     border: 2px solid #D5DBDB;
     border-radius: 15px;
@@ -96,6 +83,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 3. QUICK MATCH STATS (KPI BOXES)
+# ==========================================
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -122,6 +112,8 @@ with col3:
     </div>
     """, unsafe_allow_html=True)
 
+st.markdown("<br><br>", unsafe_allow_html=True)
+
 st.markdown("### Match Context")
 st.write(
     """
@@ -144,12 +136,10 @@ st.markdown("---")
 st.markdown("### Explore the Dashboard Visualizations")
 st.write("This platform is divided into three analytical layers. Read the briefs below to choose your starting point:")
 
+# FIRST ROW: Just the Text descriptions (forces equal spacing)
 col1, col2, col3 = st.columns(3)
 
-# --- COLUMN 1: LINE CHART ---
 with col1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-
     st.markdown("#### Momentum Progression")
     st.write(
         """
@@ -157,27 +147,17 @@ with col1:
         showing who had control at different stages of the match.
         """
     )
-    st.page_link("pages/2_Line_Chart.py", label="Explore the Line Chart",
-                 use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- COLUMN 2: RADAR CHART ---
 with col2:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("#### Playing Style Comparison")
     st.write(
         """
         A comparison of Sinner and Alcaraz across seven key performance areas (serve, return, baseline play, 
-        and groundstrokes). Values are shown on a 0–100 scale to highlight differences in playing style and strengths..
+        and groundstrokes). Values are shown on a 0–100 scale to highlight differences in playing style and strengths.
         """
     )
-    st.page_link("pages/3_Radar_Chart.py", label="Explore the Radar Chart",
-                 use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-# --- COLUMN 3: COURT CHART TEASER ---
-with col3:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
 
+with col3:
     st.markdown("####  Serve Placement")
     st.write(
         """
@@ -185,6 +165,14 @@ with col3:
         patterns in both the Deuce and Ad courts, helping reveal where points are won or lost.
         """
     )
-    st.page_link("pages/4_Court_Chart.py", label="Explore the Court Chart",
-                 use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+
+btn1, btn2, btn3 = st.columns(3)
+
+with btn1:
+    st.page_link("pages/2_Line_Chart.py", label="Explore the Line Chart", use_container_width=True)
+
+with btn2:
+    st.page_link("pages/3_Radar_Chart.py", label="Explore the Radar Chart", use_container_width=True)
+
+with btn3:
+    st.page_link("pages/4_Court_Chart.py", label="Explore the Court Chart", use_container_width=True)

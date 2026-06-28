@@ -2,7 +2,7 @@
 
 This script is separate from `src/app.py`:
 - `src/app.py` is the Streamlit dashboard.
-- `main.py` runs the offline parsing + EDA pipeline.
+- `src/main.py` runs the offline parsing + EDA pipeline.
 """
 
 from pathlib import Path
@@ -10,12 +10,12 @@ import json
 
 import pandas as pd
 
-from src.EDA.eda_analysis import run_all
-from src.data.parser import parse_point_row
+from EDA.eda_analysis import run_all
+from data_management.parser import parse_point_row
 
 
 def main() -> None:
-    project_root = Path(__file__).resolve().parent
+    project_root = Path(__file__).resolve().parent.parent
     data_path = project_root / "data" / "processed" / "sinner_alcaraz_2025.parquet"
     output_path = project_root / "match_parsed.json"
 

@@ -1,9 +1,18 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="RG25 – Sinner vs Alcaraz",
+    page_title="RG25 - Sinner vs Alcaraz",
     page_icon="🎾",
     layout="wide",
 )
 
-st.switch_page("pages/1_Overview.py")
+# Explicitly define the sidebar navigation (hides the root app.py)
+pages = [
+    st.Page("pages/1_Overview.py", title="Overview", icon="🏠"),
+    st.Page("pages/2_Line_Chart.py", title="Line Chart", icon="📈"),
+    st.Page("pages/3_Radar_Chart.py", title="Radar Chart", icon="🕸️"),
+    st.Page("pages/4_Court_Chart.py", title="Court Chart", icon="🎾"),
+]
+
+pg = st.navigation(pages)
+pg.run()

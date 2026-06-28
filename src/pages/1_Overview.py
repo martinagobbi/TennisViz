@@ -30,12 +30,12 @@ div.stPageLink a {
 div.stPageLink a:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-    border-color: #C76057;
+    border-color: #2C3E50;
 }
 
 /* Box attorno alle metriche */
 .metrics-box {
-    border: 2px solid #C76057;
+    border: 2px solid #2C3E50;
     border-radius: 15px;
     padding: 20px 10px;
     margin-bottom: 25px;

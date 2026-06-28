@@ -1,7 +1,7 @@
 """
-radar_chart_view.py
+3_Radar_Chart.py
 ------------------------
-Standalone Streamlit View for Playstyle Radar Chart
+Playstyle Radar Chart
 Sinner vs Alcaraz
 """
 
@@ -76,9 +76,10 @@ def extract_shot_info(rally_str):
             
     return terminal_shot, outcome, is_ace
 
-def calculate_metrics(player_id, match_df):
+def calculate_metrics_with_intermediates(player_id, match_df):
+    """Returns both the raw percentages and the intermediate raw counts/text for explanations."""
     if match_df.empty:
-        return [0] * 7
+        return [0] * 7, ["No Data"] * 7
 
     serve_mask = match_df['Svr'] == player_id
     return_mask = match_df['Svr'] != player_id
@@ -93,7 +94,7 @@ def calculate_metrics(player_id, match_df):
         second_in_mask = ~first_in_mask 
         second_won = serves_df[second_in_mask & (serves_df['PtWinner'] == player_id)].shape[0]
         
-        first_in_pct = first_in / total_serves if total_serves > 0 else 0
+        first_in_pct = first_in / total_serves
         first_won_pct = first_won / first_in if first_in > 0 else 0
         second_won_pct = second_won / second_in_mask.sum() if second_in_mask.sum() > 0 else 0
         
@@ -104,22 +105,35 @@ def calculate_metrics(player_id, match_df):
         double_faults = (second_in_mask & second_fault_mask).sum()
         
         serve_qual = (0.4 * first_in_pct) + (0.3 * (aces / total_serves)) + (0.3 * (1 - (double_faults / total_serves)))
+        
+        eff_text = f"1st In: {first_in}/{total_serves} | 1st Won: {first_won}/{first_in} | 2nd Won: {second_won}/{second_in_mask.sum()}"
+        qual_text = f"1st In: {first_in_pct:.1%} | Aces: {aces} | DFs: {double_faults}"
     else:
         serve_eff, serve_qual = 0, 0
+        eff_text, qual_text = "0 serves", "0 serves"
 
     # --- Baseline ---
     rally_lengths = match_df.apply(lambda row: len(re.findall(r'[fbrsvzuylmhiqt]', str(row['1st']))) + len(re.findall(r'[fbrsvzuylmhiqt]', str(row['2nd']))), axis=1)
     baseline_pts = match_df[rally_lengths > 4]
-    baseline_dom = len(baseline_pts[baseline_pts['PtWinner'] == player_id]) / len(baseline_pts) if len(baseline_pts) > 0 else 0
+    baseline_won = len(baseline_pts[baseline_pts['PtWinner'] == player_id])
+    baseline_tot = len(baseline_pts)
+    baseline_dom = baseline_won / baseline_tot if baseline_tot > 0 else 0
+    base_text = f"Won {baseline_won} out of {baseline_tot} rallies (>4 shots)"
 
     # --- Break Points ---
     bp_mask = match_df.apply(lambda row: is_break_point(row['Pts'], row['Svr'], player_id), axis=1)
     bp_chances = match_df[bp_mask]
-    bp_conversion = len(bp_chances[bp_chances['PtWinner'] == player_id]) / len(bp_chances) if len(bp_chances) > 0 else 0
+    bp_won = len(bp_chances[bp_chances['PtWinner'] == player_id])
+    bp_tot = len(bp_chances)
+    bp_conversion = bp_won / bp_tot if bp_tot > 0 else 0
+    bp_text = f"Converted {bp_won} out of {bp_tot} break point opportunities"
 
     # --- Returns ---
     return_pts = match_df[return_mask]
-    return_eff = len(return_pts[return_pts['PtWinner'] == player_id]) / len(return_pts) if len(return_pts) > 0 else 0
+    ret_won = len(return_pts[return_pts['PtWinner'] == player_id])
+    ret_tot = len(return_pts)
+    return_eff = ret_won / ret_tot if ret_tot > 0 else 0
+    ret_text = f"Won {ret_won}/{ret_tot} return points"
 
     # --- Groundstrokes ---
     bh_total, bh_won, fh_winners, total_winners = 0, 0, 0, 0
@@ -137,15 +151,19 @@ def calculate_metrics(player_id, match_df):
 
     bh_solidity = bh_won / bh_total if bh_total > 0 else 0
     fh_dominance = fh_winners / total_winners if total_winners > 0 else 0
+    
+    bh_text = f"Won {bh_won}/{bh_total} rallies ending on backhand wing"
+    fh_text = f"Hit {fh_winners}/{total_winners} total baseline winners via forehand"
 
     raw_metrics = [serve_eff, serve_qual, baseline_dom, bp_conversion, return_eff, bh_solidity, fh_dominance]
-    return [m * 100 for m in raw_metrics]
+    intermediates = [eff_text, qual_text, base_text, bp_text, ret_text, bh_text, fh_text]
+    return [m * 100 for m in raw_metrics], intermediates
 
 # ==========================================
 # 4. COMPUTE BASE TRACES
 # ==========================================
-vals_a_raw = calculate_metrics(PLAYER_1_ID, df)
-vals_b_raw = calculate_metrics(PLAYER_2_ID, df)
+vals_a_raw, inter_a = calculate_metrics_with_intermediates(PLAYER_1_ID, df)
+vals_b_raw, inter_b = calculate_metrics_with_intermediates(PLAYER_2_ID, df)
 
 ALL_CATEGORIES = [
     "Serve Efficiency",
@@ -157,7 +175,6 @@ ALL_CATEGORIES = [
     "Forehand Dominance"
 ]
 
-# Map each category to its explanation for the checkbox labels
 CATEGORY_DESCRIPTIONS = {
     "Serve Efficiency": "Combines first- and second-serve win percentages to measure overall service game security.",
     "Serve Quality": "Weights first-serve accuracy, total aces, and penalizes double faults to evaluate structural service pressure.",
@@ -171,89 +188,88 @@ CATEGORY_DESCRIPTIONS = {
 # ==========================================
 # 5. UI: COMBINED EXPLANATIONS & FILTERS
 # ==========================================
-st.markdown("<h2 style='text-align: center;'> Playing Style Comparison - Radar Chart</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #2C3E50;'>Playing Style Comparison - Radar Chart</h2>", unsafe_allow_html=True)
 
-# Kept only the intro div
 st.markdown(
     """
-    <div style='text-align: center; color: #888; margin-bottom: 30px;'>
-        This radar chart maps the distinct technical identities of Sinner and Alcaraz across seven key performance dimensions. 
-        The metrics are evaluated on a <strong>pure 0-100% scale</strong>, representing their true match execution rates without artificial scaling.
-    </div>
+    <div style='text-align: center; color: #7F8C8D; margin-bottom: 30px;'>
+        This radar chart compares the playing styles of Sinner and Alcaraz by combining their serve, return, baseline, and groundstroke statistics into a single visual profile. It allows you to quickly see where their tactical game plans overlap or differ.    </div>
     """, 
     unsafe_allow_html=True
 )
 
 st.markdown("#### 🎛️ Select Metrics to Compare:")
 
-# Use 2 columns instead of 4 so the text has room to breathe
 cols = st.columns(2)
 selected_categories = []
 
-# Generate checkboxes with embedded markdown descriptions
 for i, category in enumerate(ALL_CATEGORIES):
     with cols[i % 2]:
-        # Bold the title and append the description natively in the checkbox
-        label = f"**{category}:** {CATEGORY_DESCRIPTIONS[category]}"
-        if st.checkbox(label, value=True):
+        label = f"**{category.upper()}**\n\n{CATEGORY_DESCRIPTIONS[category]}"
+        if st.checkbox(label, value=True, key=f"chk_{i}"):
             selected_categories.append(category)
 
-st.markdown("---") # Visual separator before the chart
+st.markdown("---")
 
-# Safety check: Radar charts need at least 3 axes
 if len(selected_categories) < 3:
     st.warning("⚠️ Please select at least 3 metrics to form a proper radar chart.")
     st.stop()
 
-# Filter the data based on selections
+# Filter values
 indices = [ALL_CATEGORIES.index(cat) for cat in selected_categories]
 vals_a = [vals_a_raw[i] for i in indices]
 vals_b = [vals_b_raw[i] for i in indices]
 categories = [ALL_CATEGORIES[i] for i in indices]
 
-# Close the radar loop by appending the first value to the end
+# Close radar shapes
 vals_a += vals_a[:1]
 vals_b += vals_b[:1]
 categories += categories[:1]
 
 # ==========================================
-# 6. PLOTLY RADAR
+# 6. PLOTLY RADAR (LIGHT THEME)
 # ==========================================
 fig = go.Figure()
 
-# Player 1 Trace
 fig.add_trace(go.Scatterpolar(
     r=vals_a,
     theta=categories,
     fill="toself",
     name=PLAYER_1,
     line_color="#4A90E2",
-    fillcolor="rgba(74, 144, 226, 0.3)",
-    hovertemplate="<b>%{theta}</b><br>Score: %{r:.1f}%<extra></extra>"
+    fillcolor="rgba(74, 144, 226, 0.25)",
+    hovertemplate="<b>%{theta}</b><br>Sinner: %{r:.1f}%<extra></extra>"
 ))
 
-# Player 2 Trace
 fig.add_trace(go.Scatterpolar(
     r=vals_b,
     theta=categories,
     fill="toself",
     name=PLAYER_2,
     line_color="#E87D3E",
-    fillcolor="rgba(232, 125, 62, 0.3)",
-    hovertemplate="<b>%{theta}</b><br>Score: %{r:.1f}%<extra></extra>"
+    fillcolor="rgba(232, 125, 62, 0.25)",
+    hovertemplate="<b>%{theta}</b><br>Alcaraz: %{r:.1f}%<extra></extra>"
 ))
 
-# Layout Configuration
 fig.update_layout(
     polar=dict(
         radialaxis=dict(
             visible=True, 
             range=[0, 100], 
             tickvals=[0, 20, 40, 60, 80, 100],
-            ticktext=["0%", "20%", "40%", "60%", "80%", "100%"]
-        )
+            ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
+            gridcolor='#EAEAEA',
+            linecolor='#EAEAEA',
+            tickfont=dict(color='#2C3E50')
+        ),
+        angularaxis=dict(
+            gridcolor='#EAEAEA',
+            tickfont=dict(color='#2C3E50', size=11, family="sans-serif")
+        ),
+        bgcolor='white'
     ),
-    template="plotly_dark",
+    paper_bgcolor='rgba(0,0,0,0)', 
+    font=dict(color='#2C3E50'),
     showlegend=True,
     legend=dict(
         orientation="h",
@@ -273,3 +289,45 @@ st.plotly_chart(
         "displayModeBar": True
     }
 )
+
+# ==========================================
+# 7. SUMMARY METRICS ROW (2 Columns layout)
+# ==========================================
+st.markdown("---")
+
+sinner_avg = np.mean([vals_a_raw[i] for i in indices])
+alcaraz_avg = np.mean([vals_b_raw[i] for i in indices])
+
+sinner_max_idx = np.argmax([vals_a_raw[i] for i in indices])
+alcaraz_max_idx = np.argmax([vals_b_raw[i] for i in indices])
+
+sinner_peak_name = selected_categories[sinner_max_idx]
+alcaraz_peak_name = selected_categories[alcaraz_max_idx]
+
+# Split into 2 clean columns instead of 3 to remove "Compared Dimensions" entirely
+mc1, mc2 = st.columns(2)
+
+mc1.metric(
+    label=PLAYER_1,
+    value=f"{sinner_avg:.1f}% average score",
+    delta=f"Peak dimension: {sinner_peak_name}"
+)
+
+mc2.metric(
+    label=PLAYER_2,
+    value=f"{alcaraz_avg:.1f}% average score",
+    delta=f"Peak dimension: {alcaraz_peak_name}"
+)
+
+# ==========================================
+# 8. RAW DATA TABLE WITH INTERMEDIATE DATA
+# ==========================================
+with st.expander("Show raw data"):
+    raw_table_data = {
+        "Metric Dimension": ALL_CATEGORIES,
+        f"{PLAYER_1} Score (%)": [f"{v:.1f}%" for v in vals_a_raw],
+        f"{PLAYER_1} Core Counts & Formulas": inter_a,
+        f"{PLAYER_2} Score (%)": [f"{v:.1f}%" for v in vals_b_raw],
+        f"{PLAYER_2} Core Counts & Formulas": inter_b
+    }
+    st.dataframe(pd.DataFrame(raw_table_data), use_container_width=True)

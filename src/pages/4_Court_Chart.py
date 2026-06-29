@@ -406,7 +406,7 @@ except Exception:
 
 _DF = prepare_df(_RAW_DF)
 
-st.set_page_config(page_title="RG25 – Serve Chart", layout="wide")
+st.set_page_config(page_title="RG25 – Court Chart", layout="wide")
 
 st.markdown(
     """

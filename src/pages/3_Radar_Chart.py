@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-st.set_page_config(page_title="Player Radar", layout="wide")
+st.set_page_config(page_title="RG25 –  Radar Chart", layout="wide")
 
 repo_root = Path(__file__).resolve().parent.parent.parent
 data_path = repo_root / "data" / "processed" / "sinner_alcaraz_2025.parquet"
@@ -177,12 +177,12 @@ ALL_CATEGORIES = [
 
 CATEGORY_DESCRIPTIONS = {
     "Serve Efficiency": "Combines first- and second-serve win percentages to measure overall service game security.",
-    "Serve Quality": "Weights first-serve accuracy, total aces, and penalizes double faults to evaluate structural service pressure.",
+    "Serve Quality": "Weights first-serve accuracy, total aces, and penalizes double faults to evaluate service pressure.",
     "Baseline Dominance": "Assesses point-winning effectiveness during extended exchanges exceeding four shots.",
-    "Break Point Conversion": "Measures tactical execution and composure during critical return-game opportunities.",
-    "Return Efficiency": "Tracks the total percentage of points won while breaking the opponent’s serve.",
-    "Backhand Solidity": "Isolates the baseline resilience and win percentage of rallies ending on the backhand wing.",
-    "Forehand Dominance": "Evaluates offensive firepower by tracking the proportion of total pure winners struck via the forehand."
+    "Break Point Conversion": "Shows the percentage of break point opportunities successfully converted into breaks of serve.",
+    "Return Efficiency": "Tracks the total percentage of points won while the opponent was serving.",
+    "Backhand Solidity": "Measures how often a player wins rallies ending on the backhand side.",
+    "Forehand Dominance": "Evaluates the proportion of total pure winners obtained via the forehand."
 }
 
 # ==========================================
@@ -193,12 +193,12 @@ st.markdown("<h2 style='text-align: center; color: #2C3E50;'>Playing Style Compa
 st.markdown(
     """
     <div style='text-align: center; color: #7F8C8D; margin-bottom: 30px;'>
-        This radar chart compares the playing styles of Sinner and Alcaraz by combining their serve, return, baseline, and groundstroke statistics into a single visual profile. It allows you to quickly see where their tactical game plans overlap or differ.    </div>
+        This radar chart compares the playing styles of Sinner and Alcaraz by combining their serve, return, baseline, and groundstroke statistics into a single visual profile. It allows you to quickly see where their tactical game styles overlap or differ.    </div>
     """, 
     unsafe_allow_html=True
 )
 
-st.markdown("#### 🎛️ Select Metrics to Compare:")
+st.markdown("#### Select Metrics to Compare:")
 
 cols = st.columns(2)
 selected_categories = []

@@ -14,10 +14,10 @@ from pathlib import Path
 # ==========================================
 # 1. SETUP STREAMLIT
 # ==========================================
-st.set_page_config(page_title="Match Momentum", layout="wide")
+st.set_page_config(page_title="RG25 – Line Chart", layout="wide")
 
 st.markdown("<h2 style='text-align: center; color: #2C3E50;'>Momentum Progression - Line Chart</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #7F8C8D;'>This line chart models the real-time narrative and competitive equilibrium of the match by converting point-by-point score variations and historical set/game contexts into a dynamic win probability index. Styled as a \"Tug-of-War,\" the chart uses a central baseline representing a perfect 50% deadlock. As points are played, the momentum line shifts upward toward 100% dominance for Sinner or down toward 100% dominance for Alcaraz.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #7F8C8D;'>This line chart visualizes the match progression through a dynamic win probability index based on point-by-point score changes and game/set context. The 50% baseline represents a balanced state, while fluctuations above or below highlight momentum shifts between Sinner and Alcaraz.</p>", unsafe_allow_html=True)
 
 # ==========================================
 # 2. ROBUST DATA LOADING

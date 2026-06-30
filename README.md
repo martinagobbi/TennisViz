@@ -5,10 +5,9 @@ TennisViz is a tennis data visualization project focused on the
 
 It includes:
 
-- a Streamlit dashboard in `src/app.py`
+- a Streamlit dashboard with multiple pages in `src/pages/`
 - data parsing and preparation utilities in `src/data/`
-- exploratory analysis in `src/EDA/`
-- chart modules in `src/charts/`
+- exploratory data analysis (EDA) in `src/EDA/`
 
 Raw data comes from the [Tennis Abstract Match Charting Project](https://github.com/JeffSackmann/tennis_MatchChartingProject) by Jeff Sackmann.
 
@@ -24,22 +23,28 @@ TennisViz/
 │   └── processed/
 │       └── sinner_alcaraz_2025.parquet
 ├── figures/
-├── outputs/
 ├── src/
+│   ├── .streamlit/
+│   │   └── config.toml
+│   ├── data/
+│   │   ├── data_management/
+│   │   │   ├── filter.py
+│   │   │   ├── loader.py
+│   │   │   └── parser.py
+│   │   └── __init__.py
 │   ├── EDA/
 │   │   ├── eda_analysis.py
 │   │   ├── globals.py
-│   │   └── helper.py
-│   ├── charts/
-│   │   ├── court_chart.py
-│   │   ├── mirror_line.py
-│   │   └── radar.py
-│   └── data/
-│       ├── filter.py
-│       ├── loader.py
-│       └── parser.py
+│   │   ├── helper.py
+│   │   └── __init__.py
+│   ├── pages/
+│   │   ├── 1_Overview.py
+│   │   ├── 2_Line_Chart.py
+│   │   ├── 3_Radar_Chart.py
+│   │   └── 4_Court_Chart.py
+│   └── app.py
 ├── main.py
-├── src/app.py
+├── match_parsed.json
 ├── requirements.txt
 ├── Dockerfile
 └── README.md
@@ -73,17 +78,19 @@ pip install -r requirements.txt
 
 ## 🚀 Run the project
 
-### Streamlit dashboard
+This project has **two separate entry points**: one for the interactive dashboard, one for offline analysis.
 
-The main dashboard now starts from `src/app.py`:
+### Streamlit dashboard (`src/app.py`)
+
+Launches the interactive multi-page Streamlit app. `src/app.py` defines the sidebar navigation explicitly via `st.navigation`, pointing to each page in `src/pages/`. The home page (`1_Overview.py`) links to the Line Chart, Radar Chart, and Court Chart pages.
 
 ```bash
 streamlit run src/app.py
 ```
 
-### One-off analysis script
+### Offline analysis (`main.py`)
 
-`main.py` loads the processed parquet, parses each point, saves the parsed JSON, and runs the EDA pipeline:
+Used for **EDA and offline parsing**, not the dashboard. It loads the processed parquet, parses each point with the Match Charting Project parser, saves the parsed output to `match_parsed.json`, and runs the full EDA pipeline (saving plots to `figures/`).
 
 ```bash
 python main.py
@@ -91,10 +98,10 @@ python main.py
 
 ### Data preparation
 
-`src/data/filter.py` filters the raw Tennis Abstract CSV and creates the processed parquet used by the app:
+`src/data_management/filter.py` filters the raw Tennis Abstract CSV and creates the processed parquet used by both the dashboard and `main.py`:
 
 ```bash
-python src/data/filter.py
+python src/data_management/filter.py
 ```
 
 Expected input:
@@ -109,19 +116,21 @@ Expected output:
 
 ## 🧠 Data pipeline
 
-- `src/data/filter.py` extracts the Sinner–Alcaraz match from the raw CSV.
-- `src/data/parser.py` decodes Tennis Abstract point strings into structured features.
-- `src/data/loader.py` loads the processed parquet and prepares a chart-friendly dataframe.
-- `src/EDA/eda_analysis.py` generates exploratory plots and summary tables.
+- `src/data_management/filter.py` extracts the Sinner–Alcaraz match from the raw CSV.
+- `src/data_management/parser.py` decodes Tennis Abstract point strings into structured features.
+- `src/data_management/loader.py` loads the processed parquet and prepares a chart-friendly dataframe.
+- `src/EDA/eda_analysis.py` generates exploratory plots and summary tables (used by `main.py`).
 
 ---
 
-## 📊 Visualization modules
+## 📊 Dashboard pages (`src/pages/`)
 
-- `src/app.py`: unified Streamlit dashboard.
-- `src/charts/court_chart.py`: interactive Plotly court chart.
-- `src/charts/radar.py`: radar-style comparison chart.
-- `src/charts/mirror_line.py`: momentum / win-probability style chart.
+The sidebar navigation is built explicitly in `src/app.py` using `st.navigation`, which maps each page in this folder to a title and icon, in the order they should appear.
+
+- `1_Overview.py`: landing page with match context and links to the other pages.
+- `2_Line_Chart.py`: momentum / win-probability style chart.
+- `3_Radar_Chart.py`: radar-style tactical comparison chart.
+- `4_Court_Chart.py`: interactive Plotly court chart with serve placement.
 
 ---
 

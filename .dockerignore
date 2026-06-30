@@ -11,3 +11,5 @@ notebooks/
 outputs/
 figures/
 .DS_Store
+data/raw/
+*.csv

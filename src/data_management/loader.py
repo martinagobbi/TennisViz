@@ -5,9 +5,14 @@ import pandas as pd
 
 from .parser import parse_point_row
 
-#  LOADER — reads the parquet file and builds the dataframe
+#  LOADER: reads the parquet file and builds the dataframe
 
 def get_court_side(score_str: str) -> str:
+    """Infer the server side ('Deuce' or 'Ad') from the current game score.
+
+    If the score cannot be parsed,
+    it falls back to 'Deuce' so downstream charting code can keep running.
+    """
     if pd.isna(score_str):
         return 'Deuce' 
     clean_score = str(score_str).strip().upper().split(' ')[0]
@@ -25,6 +30,7 @@ def get_court_side(score_str: str) -> str:
 
 
 def _resolve_rally_columns(df: pd.DataFrame) -> tuple[str, str]:
+    """Return the names of the columns that contain the first and second rally strings."""
     if {"1st", "2nd"}.issubset(df.columns):
         return "1st", "2nd"
     if {"rally_1st", "rally_2nd"}.issubset(df.columns):
@@ -33,6 +39,7 @@ def _resolve_rally_columns(df: pd.DataFrame) -> tuple[str, str]:
 
 
 def _safe_player_id(value: Any) -> int | None:
+    """Convert a player identifier to int when possible; otherwise return None."""
     try:
         return int(float(value))
     except (TypeError, ValueError):
@@ -40,8 +47,10 @@ def _safe_player_id(value: Any) -> int | None:
 
 def load_and_clean(path: str | Path) -> pd.DataFrame:
     """
-    Load the .parquet file from `data/processed/` and return a clean
-    dataframe with all derived features ready for charts.
+    Load the processed parquet file and return a chart-ready dataframe.
+
+    The loader parses each point with `parse_point_row`, then flattens the
+    nested parser output (`derived`, `flags`, `meta`) into one row per point.
  
     Expected input columns (Sackmann names, already cleaned by `filter.py`):
         Pt, set1, set2, Gm1, Gm2, Pts, Gm#, Svr, 1st, 2nd, PtWinner
@@ -62,6 +71,7 @@ def load_and_clean(path: str | Path) -> pd.DataFrame:
         active_point = parsed.get("active_point") or {}
         rally = active_point.get("rally") or []
 
+        # Normalize player identifiers so charts can work with numeric IDs
         server_id = _safe_player_id(raw_row.get("Svr", raw_row.get("server")))
         winner_id = _safe_player_id(raw_row.get("PtWinner", raw_row.get("point_winner")))
         score_in_game = raw_row.get("Pts", raw_row.get("score_in_game"))
@@ -71,6 +81,7 @@ def load_and_clean(path: str | Path) -> pd.DataFrame:
         if rally:
             last_shot_direction = rally[-1].get("direction")
 
+        # Build the flattened record expected by the dashboard and EDA modules
         rows.append(
             {
                 "point_num": raw_row.get("Pt", raw_row.get("point_num")),
@@ -106,12 +117,7 @@ def load_and_clean(path: str | Path) -> pd.DataFrame:
         )
 
     return pd.DataFrame(rows).reset_index(drop=True)
- 
- 
-# ═══════════════════════════════════════════════════════
-#  TERMINAL TEST
-#  python src/data/loader.py data/processed/sinner_alcaraz_2025.parquet
-# ═══════════════════════════════════════════════════════
+
  
 if __name__ == "__main__":
     import sys
@@ -127,9 +133,9 @@ if __name__ == "__main__":
         "rally_length", "last_shot_type", "last_shot_direction",
     ]].head(10).to_string())
  
-    print("\n── Statistiche rapide ──")
-    print(f"  Ace:              {df['is_ace'].sum()}")
-    print(f"  Doppi falli:      {df['is_double_fault'].sum()}")
-    print(f"  Winners totali:   {df['is_winner_pt'].sum()}")
-    print(f"  1° servizio in:   {df['is_first_serve_in'].mean():.1%}")
-    print(f"  Rally medio:      {df['rally_length'].mean():.1f} colpi")
+    print("\nQuick statistics")
+    print(f"  Aces:             {df['is_ace'].sum()}")
+    print(f"  Double faults:    {df['is_double_fault'].sum()}")
+    print(f"  Total winners:    {df['is_winner_pt'].sum()}")
+    print(f"  1st serve in:     {df['is_first_serve_in'].mean():.1%}")
+    print(f"  Average rally:    {df['rally_length'].mean():.1f} shots")

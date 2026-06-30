@@ -1,5 +1,4 @@
-"""Batch analysis entrypoint for TennisViz.
-
+"""
 This script is separate from `src/app.py`:
 - `src/app.py` is the Streamlit dashboard.
 - `src/main.py` runs the offline parsing + EDA pipeline.

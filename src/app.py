@@ -6,7 +6,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Explicitly define the sidebar navigation (hides the root app.py)
+# Explicitly define the sidebar navigation
 pages = [
     st.Page("pages/1_Overview.py", title="Overview", icon="🏠"),
     st.Page("pages/2_Line_Chart.py", title="Line Chart", icon="📈"),

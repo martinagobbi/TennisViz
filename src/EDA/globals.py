@@ -12,7 +12,7 @@ C_LIGHT_S   = "#78CDD7"
 C_LIGHT_A   = "#FFB385"
 PLAYERS     = {"1": "Sinner", "2": "Alcaraz"}
 
-# Stile globale Matplotlib
+# Global matplotlib settings for all plots
 plt.rcParams.update({
     "font.family":       "sans-serif",
     "font.size":         11,

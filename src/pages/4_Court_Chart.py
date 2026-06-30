@@ -1,10 +1,3 @@
-"""
-4_Court_Chart.py
-------------------------
-Serve Placement Court Chart
-Sinner vs Alcaraz
-"""
-
 import hashlib
 import traceback
 from pathlib import Path
@@ -16,9 +9,8 @@ from plotly.subplots import make_subplots
 import streamlit as st
 import sys
 
-# ==========================================
-# 1. GEOMETRIC CONSTANTS
-# ==========================================
+
+# GEOMETRIC CONSTANTS
 COURT_WIDTH   = 8.23   # Singles boundary width
 DOUBLES_WIDTH = 10.97  # Doubles boundary width (Alleys)
 HALF_LEN      = 11.885
@@ -31,9 +23,8 @@ DEPTH_OFFSET  = 0.60
 DEPTH_RANGE   = 1.0 - DEPTH_OFFSET
 NET_DEPTH     = -0.85  # Middleground net height (between -0.5 and -1.2)
 
-# ==========================================
-# 2. OUTCOME STYLE
-# ==========================================
+
+# OUTCOME STYLE
 OUTCOME_COLOR = {
     "ace":    "#18C05E",   # Green
     "winner": "#FFCC00",   # Yellow
@@ -51,9 +42,8 @@ OUTCOME_SIZE = {
 }
 SERVE_OPACITY = {1: 0.90, 2: 0.90}
 
-# ==========================================
-# 3. SAMPLING HELPERS
-# ==========================================
+
+# SAMPLING HELPERS
 def stable_seed(row_id) -> int:
     return int(hashlib.md5(str(row_id).encode()).hexdigest(), 16) % (2**31)
 
@@ -127,9 +117,8 @@ def get_serve_coords(direction: str, side: str, row_id=0):
     y = float(np.clip(y, MARGIN_Y, SVC_LEN - MARGIN_Y))
     return x, y
 
-# ==========================================
-# 4. COURT GENERATION (ALL LAYERED BELOW DATA)
-# ==========================================
+
+# COURT GENERATION 
 CLAY  = "#C76057"
 NET   = "#1a1a1a"
 WHITE = "white"
@@ -166,8 +155,8 @@ def court_shapes() -> list[dict]:
                 layer="below"
             ))
             
-    # ── TENNIS NET IMPLEMENTATION ──
-    # Net drop-shadow background backing box (Using CLAY color)
+    # TENNIS NET
+    # Net drop-shadow background backing box
     shapes.append(dict(
         type="rect", x0=-DW2-0.2, x1=DW2+0.2, y0=NET_DEPTH, y1=0,
         fillcolor=CLAY, line_width=0, layer="below"
@@ -187,16 +176,10 @@ def court_shapes() -> list[dict]:
             line=dict(color="rgba(255,255,255,0.25)", width=1), layer="below"
         ))
         
-    # Bottom grounding line cable & dual ground anchor posts
     shapes.append(dict(type="line", x0=-DW2-0.2, x1=DW2+0.2, y0=NET_DEPTH, y1=NET_DEPTH, line=dict(color="rgba(0,0,0,0.6)", width=2.5), layer="below"))
     shapes.append(dict(type="line", x0=-DW2-0.15, x1=-DW2-0.15, y0=NET_DEPTH, y1=0.1, line=dict(color="#333333", width=6), layer="below"))
     shapes.append(dict(type="line", x0=DW2+0.15, x1=DW2+0.15, y0=NET_DEPTH, y1=0.1, line=dict(color="#333333", width=6), layer="below"))
-    
-    # Clean White Top Net Strap Canvas
-    shapes.append(dict(
-        type="rect", x0=-DW2-0.2, x1=DW2+0.2, y0=-0.08, y1=0.02,
-        fillcolor="white", line_width=0, layer="below"
-    ))
+    shapes.append(dict(type="rect", x0=-DW2-0.2, x1=DW2+0.2, y0=-0.08, y1=0.02, fillcolor="white", line_width=0, layer="below"))
     
     return shapes
 
@@ -214,7 +197,6 @@ def court_annotations() -> list[dict]:
                 x=sign * cx, y=cy,
                 text=f"<b>{name}</b>",
                 showarrow=False,
-                # Bumped up from size 8 to size 12, slightly brighter
                 font=dict(color="rgba(255,255,255,0.65)", size=12, family="monospace"),
                 xanchor="center",
             ))
@@ -223,15 +205,13 @@ def court_annotations() -> list[dict]:
             x=sign * W2 / 2, y=SVC_LEN + 0.5,
             text=f"<b>{side_label}</b>",
             showarrow=False,
-            # Bumped up from size 10 to size 14, slightly brighter
             font=dict(color="rgba(255,255,255,0.85)", size=14, family="monospace"),
             xanchor="center",
         ))
     return labels
 
-# ==========================================
-# 5. CLASSIFY OUTCOME
-# ==========================================
+
+# CLASSIFY OUTCOME
 def classify_outcome(row: pd.Series) -> str:
     if row.get("is_ace", False):
         return "ace"
@@ -239,9 +219,8 @@ def classify_outcome(row: pd.Series) -> str:
         return "winner"
     return "lost"
 
-# ==========================================
-# 6. BUILD PLOTLY LAYOUT
-# ==========================================
+
+# BUILD PLOTLY LAYOUT
 def build_figure(df: pd.DataFrame) -> go.Figure:
     players = ["Sinner", "Alcaraz"]
 
@@ -346,9 +325,8 @@ def build_figure(df: pd.DataFrame) -> go.Figure:
 
     return fig
 
-# ==========================================
-# 7. DATA PREPARATION
-# ==========================================
+
+# DATA PREPARATION
 def prepare_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
     if "serve_number_played" in df.columns and "serve_number" not in df.columns:
@@ -389,9 +367,6 @@ def make_synthetic_df(n: int = 200) -> pd.DataFrame:
         ))
     return pd.DataFrame(rows)
 
-# ==========================================
-# 8. STREAMLIT APP ENGINE
-# ==========================================
 DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "processed" / "sinner_alcaraz_2025.parquet"
 
 try:
@@ -498,7 +473,7 @@ for col, player in zip([mc1, mc2], ["Sinner", "Alcaraz"]):
         delta=f"{aces} aces · {pct:.0f}% points won",
     )
 
-mc3.metric("Total serves (filtered)", len(dff))
+mc3.metric("Total serves", len(dff))
 
 with st.expander("Show raw data"):
     st.dataframe(dff, use_container_width=True)

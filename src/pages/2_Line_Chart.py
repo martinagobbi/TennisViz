@@ -1,27 +1,16 @@
-"""
-2_Line_Chart.py
-------------------------
-Win Probability Line Chart
-Sinner vs Alcaraz
-"""
-
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 from pathlib import Path
 
-# ==========================================
-# 1. SETUP STREAMLIT
-# ==========================================
+# SETUP STREAMLIT
 st.set_page_config(page_title="RG25 – Line Chart", layout="wide")
 
 st.markdown("<h2 style='text-align: center; color: #2C3E50;'>Momentum Progression - Line Chart</h2>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #7F8C8D;'>This line chart visualizes the match progression through a dynamic win probability index based on point-by-point score changes and game/set context. The 50% baseline represents a balanced state, while fluctuations above or below highlight momentum shifts between Sinner and Alcaraz.</p>", unsafe_allow_html=True)
 
-# ==========================================
-# 2. ROBUST DATA LOADING
-# ==========================================
+# DATA LOADING
 @st.cache_data
 def load_data():
     repo_root = Path(__file__).resolve().parent.parent.parent
@@ -44,9 +33,8 @@ df = load_data()
 if df.empty:
     st.stop()
 
-# ==========================================
-# 3. CALCULATE MATCH-AWARE WIN PROBABILITY
-# ==========================================
+
+# CALCULATE MATCH-AWARE WIN PROBABILITY
 momentum = []
 current_momentum = 0
 
@@ -81,9 +69,8 @@ set2_col = 'Set2' if 'Set2' in df.columns else 'set2'
 df['CompletedSets'] = df[set1_col] + df[set2_col]
 end_of_sets = df[df['CompletedSets'] > df['CompletedSets'].shift(1).fillna(0)].index.tolist()
 
-# ==========================================
-# 4. SEGMENT LINE BY DOMINANCE (COLOR SPLIT)
-# ==========================================
+
+# SEGMENT LINE BY DOMINANCE (COLOR SPLIT)
 x_sinner, y_sinner = [], []
 x_alcaraz, y_alcaraz = [], []
 
@@ -122,9 +109,8 @@ for i in range(len(df) - 1):
             x_sinner.extend([x_cross, pt2, None])
             y_sinner.extend([50.0, y2, None])
 
-# ==========================================
-# 5. PLOT CHART
-# ==========================================
+
+# PLOT CHART
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
@@ -218,9 +204,8 @@ fig.update_layout(
 
 st.plotly_chart(fig, width="stretch", config={"displayModeBar": True, "scrollZoom": True})
 
-# ==========================================
-# 6. SUMMARY METRICS ROW
-# ==========================================
+
+# SUMMARY METRICS
 st.markdown("---")
 
 tot_points = len(df)

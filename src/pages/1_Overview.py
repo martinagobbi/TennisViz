@@ -1,8 +1,5 @@
 import streamlit as st
 
-# ==========================================
-# 2. HERO HEADER
-# ==========================================
 st.markdown("<h1 style='text-align: center; color: #2C3E50;'>Roland Garros 2025 Overview</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #7F8C8D; font-size:18px;'>Jannik Sinner vs Carlos Alcaraz</p>", unsafe_allow_html=True)
 st.markdown("---")
@@ -83,9 +80,6 @@ div.stPageLink a:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 3. QUICK MATCH STATS (KPI BOXES)
-# ==========================================
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -130,9 +124,6 @@ st.write(
 
 st.markdown("---")
 
-# ==========================================
-# 4. THE VISUALIZATIONS (3-COLUMN TEASER GRID)
-# ==========================================
 st.markdown("### Explore the Dashboard Visualizations")
 st.write("This platform is divided into three analytical layers. Read the briefs below to choose your starting point:")
 

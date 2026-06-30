@@ -136,6 +136,7 @@ def _read_modifiers(code: str, idx: int) -> tuple[list[str], int]:
 
 
 def parse_point_code(code: str | None, serve_number: int = 1) -> ParsedPoint | None:
+    """Parse a raw Match Charting Project point code into a structured point."""
     if code is None:
         return None
 
@@ -168,7 +169,7 @@ def parse_point_code(code: str | None, serve_number: int = 1) -> ParsedPoint | N
         if fault_code == "c" and idx + 1 < len(raw):
             serve.raw += fault_code
             idx += 1  # skip the 'c' and continue parsing the rally
-            warnings.append("Let sul servizio (c): punto rigiocato, non contato come fault")
+            warnings.append("Serve let (c): the point was replayed and is not counted as a fault")
         else:
             serve.fault_code = fault_code
             serve.fault = FAULT_TYPE[fault_code]
@@ -185,7 +186,6 @@ def parse_point_code(code: str | None, serve_number: int = 1) -> ParsedPoint | N
     rally: list[ParsedShot] = []
     shot_index = 0
     while idx < len(raw):
-        token_start = idx
         token = raw[idx]
 
         if token not in RALLY_SEQUENCE:
@@ -267,9 +267,11 @@ def parse_point_row(
     first_col: str = "1st",
     second_col: str = "2nd",
 ) -> dict[str, Any]:
+    """Parse both serves for a row and return a dashboard-friendly record."""
     first_point = parse_point_code(row.get(first_col), serve_number=1)
     second_point = parse_point_code(row.get(second_col), serve_number=2)
 
+    # Prefer the second serve when it exists, otherwise fall back to the first.
     active_point = second_point if second_point else first_point
     double_fault = bool(
         first_point
@@ -281,20 +283,16 @@ def parse_point_row(
     # Determine the point winner from the "PtWinner" column (1 or 2).
     pt_winner = str(row.get("PtWinner", "")).strip()
     server    = str(row.get("Svr", "")).strip()
-    set_num   = row.get("Set", None)
-    game_num  = row.get("Game", None)
 
     # Break point: the Sackmann "Pts" column contains "BP" on break points.
     pts_flag      = str(row.get("Pts", "")).strip()
     is_break_point = "BP" in pts_flag
 
-    # Tie-break: the game is a TB if the score starts with "0-0" and we are
-    # past game 12, or if the "TBpt" column is present.
-    is_tiebreak = str(row.get("TBpt", "")).strip() == "1"
-
     all_warnings = []
-    if first_point:  all_warnings += first_point.warnings
-    if second_point: all_warnings += second_point.warnings
+    if first_point:
+        all_warnings += first_point.warnings
+    if second_point:
+        all_warnings += second_point.warnings
 
     return {
         "first_serve":  asdict(first_point)  if first_point  else None,
@@ -311,6 +309,7 @@ def parse_point_row(
             "point_winner":   str(row.get("PtWinner", "")).strip(),
             "set": int(row.get("Set1", 0)) + int(row.get("Set2", 0)) + 1,
             "is_break_point": "BP" in str(row.get("Pts", "")),
+            "is_tiebreak": bool(row.get("TbSet", False)),
             "warnings":       all_warnings,
         }
     }
@@ -320,6 +319,7 @@ def derive_point_features(
     first_point: ParsedPoint | None,
     second_point: ParsedPoint | None,
 ) -> dict[str, Any]:
+    """Derive the flattened features used by the charts from the parsed point."""
     point = second_point if second_point else first_point
     if point is None:
         return {}
@@ -358,6 +358,7 @@ def parse_csv(
     second_col: str = "2nd",
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
+    """Parse an entire CSV file and return a list of structured point records."""
     records: list[dict[str, Any]] = []
     with Path(input_path).open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -371,6 +372,7 @@ def parse_csv(
 
 
 def flatten_points_for_dashboard(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flatten nested parser output into a chart-friendly row format."""
     flat_rows: list[dict[str, Any]] = []
     for record in records:
         active = record.get("active_point")
@@ -402,6 +404,7 @@ def flatten_points_for_dashboard(records: list[dict[str, Any]]) -> list[dict[str
 
 
 def summarize_serve_patterns(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build a compact summary of serve and return patterns for dashboards."""
     summary = {
         "points": 0,
         "first_serves_in": 0,

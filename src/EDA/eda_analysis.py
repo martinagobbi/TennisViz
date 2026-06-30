@@ -167,7 +167,7 @@ def plot_4_return(df: pd.DataFrame):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
 
-    # (a) profondità risposta
+    # (a) return depth
     for pid, pname, col in [(SINNER_ID,"Sinner",C_SINNER),(ALCARAZ_ID,"Alcaraz",C_ALCARAZ)]:
         # as returner, the server is the opponent
         ret = df[df["server"] != pid].copy()
@@ -196,7 +196,7 @@ def plot_4_return(df: pd.DataFrame):
     ax1.legend(frameon=False)
     ax1.set_title("(a) Return Depth", fontweight="bold")
 
-    # (b) % punti vinti in risposta (su 1° vs 2° avversario)
+    # (b) % points won on return (1st vs 2nd)
     cat_labels = ["Return to 1st", "Return to 2nd"]
     x2 = np.arange(len(cat_labels)); w2 = 0.35
     for offset, (pid, pname, col) in enumerate([(SINNER_ID,"Sinner",C_SINNER),(ALCARAZ_ID,"Alcaraz",C_ALCARAZ)]):
@@ -220,7 +220,7 @@ def plot_4_return(df: pd.DataFrame):
 def plot_5_rally_length(df: pd.DataFrame):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 
-    # (a) distribuzione KDE
+    # (a) KDE distribution
     data_s = df[df["server"] == SINNER_ID]["rally_length"].dropna()
     data_a = df[df["server"] == ALCARAZ_ID]["rally_length"].dropna()
 

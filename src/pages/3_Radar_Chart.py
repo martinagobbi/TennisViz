@@ -1,10 +1,3 @@
-"""
-3_Radar_Chart.py
-------------------------
-Playstyle Radar Chart
-Sinner vs Alcaraz
-"""
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -12,9 +5,8 @@ import re
 import streamlit as st
 import plotly.graph_objects as go
 
-# ==========================================
-# 1. CONFIGURATION
-# ==========================================
+
+# CONFIGURATION
 st.set_page_config(page_title="RG25 –  Radar Chart", layout="wide")
 
 repo_root = Path(__file__).resolve().parent.parent.parent
@@ -25,9 +17,8 @@ PLAYER_2 = "C. Alcaraz"
 PLAYER_1_ID = 1
 PLAYER_2_ID = 2
 
-# ==========================================
-# 2. DATA LOADING
-# ==========================================
+
+# DATA LOADING
 @st.cache_data
 def load_data():
     try:
@@ -41,9 +32,8 @@ df = load_data()
 if df.empty:
     st.stop()
 
-# ==========================================
-# 3. PARSER & MATH HELPERS
-# ==========================================
+
+# 3. PARSER
 def is_break_point(pts_str, server_id, target_player_id):
     if pd.isna(pts_str) or target_player_id == server_id:
         return False
@@ -84,7 +74,7 @@ def calculate_metrics_with_intermediates(player_id, match_df):
     serve_mask = match_df['Svr'] == player_id
     return_mask = match_df['Svr'] != player_id
     
-    # --- Serve ---
+    # Serve
     serves_df = match_df[serve_mask].copy()
     total_serves = len(serves_df)
     if total_serves > 0:
@@ -112,7 +102,7 @@ def calculate_metrics_with_intermediates(player_id, match_df):
         serve_eff, serve_qual = 0, 0
         eff_text, qual_text = "0 serves", "0 serves"
 
-    # --- Baseline ---
+    # Baseline
     rally_lengths = match_df.apply(lambda row: len(re.findall(r'[fbrsvzuylmhiqt]', str(row['1st']))) + len(re.findall(r'[fbrsvzuylmhiqt]', str(row['2nd']))), axis=1)
     baseline_pts = match_df[rally_lengths > 4]
     baseline_won = len(baseline_pts[baseline_pts['PtWinner'] == player_id])
@@ -120,7 +110,7 @@ def calculate_metrics_with_intermediates(player_id, match_df):
     baseline_dom = baseline_won / baseline_tot if baseline_tot > 0 else 0
     base_text = f"Won {baseline_won} out of {baseline_tot} rallies (>4 shots)"
 
-    # --- Break Points ---
+    # Break Points
     bp_mask = match_df.apply(lambda row: is_break_point(row['Pts'], row['Svr'], player_id), axis=1)
     bp_chances = match_df[bp_mask]
     bp_won = len(bp_chances[bp_chances['PtWinner'] == player_id])
@@ -128,14 +118,14 @@ def calculate_metrics_with_intermediates(player_id, match_df):
     bp_conversion = bp_won / bp_tot if bp_tot > 0 else 0
     bp_text = f"Converted {bp_won} out of {bp_tot} break point opportunities"
 
-    # --- Returns ---
+    # Returns
     return_pts = match_df[return_mask]
     ret_won = len(return_pts[return_pts['PtWinner'] == player_id])
     ret_tot = len(return_pts)
     return_eff = ret_won / ret_tot if ret_tot > 0 else 0
     ret_text = f"Won {ret_won}/{ret_tot} return points"
 
-    # --- Groundstrokes ---
+    # Groundstrokes
     bh_total, bh_won, fh_winners, total_winners = 0, 0, 0, 0
     for _, row in match_df.iterrows():
         rally_str = row['2nd'] if pd.notna(row['2nd']) else row['1st']
@@ -159,9 +149,8 @@ def calculate_metrics_with_intermediates(player_id, match_df):
     intermediates = [eff_text, qual_text, base_text, bp_text, ret_text, bh_text, fh_text]
     return [m * 100 for m in raw_metrics], intermediates
 
-# ==========================================
-# 4. COMPUTE BASE TRACES
-# ==========================================
+
+# COMPUTE BASE TRACES
 vals_a_raw, inter_a = calculate_metrics_with_intermediates(PLAYER_1_ID, df)
 vals_b_raw, inter_b = calculate_metrics_with_intermediates(PLAYER_2_ID, df)
 
@@ -185,9 +174,8 @@ CATEGORY_DESCRIPTIONS = {
     "Forehand Dominance": "Evaluates the proportion of total pure winners obtained via the forehand."
 }
 
-# ==========================================
-# 5. UI: COMBINED EXPLANATIONS & FILTERS
-# ==========================================
+
+# UI: DESCRIPTION AND FILTERS
 st.markdown("<h2 style='text-align: center; color: #2C3E50;'>Playing Style Comparison - Radar Chart</h2>", unsafe_allow_html=True)
 
 st.markdown(
@@ -198,7 +186,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown("#### Select Metrics to Compare:")
+st.markdown("#### Select metrics to compare:")
 
 cols = st.columns(2)
 selected_categories = []
@@ -226,9 +214,7 @@ vals_a += vals_a[:1]
 vals_b += vals_b[:1]
 categories += categories[:1]
 
-# ==========================================
-# 6. PLOTLY RADAR (LIGHT THEME)
-# ==========================================
+# PLOTLY RADAR
 fig = go.Figure()
 
 fig.add_trace(go.Scatterpolar(
@@ -290,9 +276,7 @@ st.plotly_chart(
     }
 )
 
-# ==========================================
-# 7. SUMMARY METRICS ROW (2 Columns layout)
-# ==========================================
+# 7. SUMMARY METRICS
 st.markdown("---")
 
 sinner_avg = np.mean([vals_a_raw[i] for i in indices])
@@ -319,9 +303,8 @@ mc2.metric(
     delta=f"Peak dimension: {alcaraz_peak_name}"
 )
 
-# ==========================================
-# 8. RAW DATA TABLE WITH INTERMEDIATE DATA
-# ==========================================
+
+# RAW DATA TABLE
 with st.expander("Show raw data"):
     raw_table_data = {
         "Metric Dimension": ALL_CATEGORIES,

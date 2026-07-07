@@ -144,7 +144,7 @@ with col2:
     st.write(
         """
         A comparison of Sinner and Alcaraz across seven key performance areas (serve, return, baseline play, 
-        and groundstrokes). Values are shown on a 0–100 scale to highlight differences in playing style and strengths.
+        and groundstrokes).
         """
     )
 

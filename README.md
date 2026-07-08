@@ -42,8 +42,8 @@ TennisViz/
 │   │   ├── 2_Line_Chart.py
 │   │   ├── 3_Radar_Chart.py
 │   │   └── 4_Court_Chart.py
-│   └── app.py
-├── main.py
+│   ├── app.py
+│   └── main.py
 ├── match_parsed.json
 ├── requirements.txt
 ├── Dockerfile
@@ -93,7 +93,7 @@ streamlit run src/app.py
 Used for **EDA and offline parsing**, not the dashboard. It loads the processed parquet, parses each point with the Match Charting Project parser, saves the parsed output to `match_parsed.json`, and runs the full EDA pipeline (saving plots to `figures/`).
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 ### Data preparation
